@@ -2,20 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Exposure Tool (Stop-Discrete)</title>
+  <title>Exposure Tool (Stop-Based)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>Exposure Tool (Stop-Discrete)</h1>
+<h1>Exposure Tool</h1>
+
+<!-- CAMERA -->
+<div class="camera-select">
+  <label>Camera</label>
+  <select id="camera">
+    <option value="arri">ARRI ALEXA Mini LF</option>
+    <option value="venice">Sony VENICE</option>
+  </select>
+</div>
 
 <!-- WHAT TO CALCULATE -->
 <div class="calc-select">
   <label><input type="radio" name="calc" value="t" checked> T-Stop</label>
   <label><input type="radio" name="calc" value="iso"> ISO</label>
   <label><input type="radio" name="calc" value="nd"> ND</label>
-  <label><input type="radio" name="calc" value="shutter"> Shutter</label>
+  <label><input type="radio" name="calc" value="shutter"> Shutter Angle</label>
   <label><input type="radio" name="calc" value="fps"> Frame Rate</label>
 </div>
 
@@ -40,13 +49,7 @@
     </select>
 
     <label>ISO</label>
-    <select id="a_iso">
-      <option>200</option>
-      <option>400</option>
-      <option selected>800</option>
-      <option>1600</option>
-      <option>3200</option>
-    </select>
+    <select id="a_iso"></select>
 
     <label>T-Stop</label>
     <select id="a_t">
@@ -74,56 +77,50 @@
   </div>
 
   <!-- B -->
-<div class="card">
-  <h3>B</h3>
+  <div class="card">
+    <h3>B</h3>
 
-  <label>Frame Rate</label>
-  <select id="b_fps">
-    <option value="25">25</option>
-    <option value="50">50</option>
-  </select>
+    <label>Frame Rate</label>
+    <select id="b_fps">
+      <option value="25">25</option>
+      <option value="50">50</option>
+    </select>
 
-  <label>Shutter Angle</label>
-  <select id="b_shutter">
-    <option value="360">360°</option>
-    <option value="180" selected>180°</option>
-    <option value="90">90°</option>
-    <option value="45">45°</option>
-  </select>
+    <label>Shutter Angle</label>
+    <select id="b_shutter">
+      <option value="360">360°</option>
+      <option value="180" selected>180°</option>
+      <option value="90">90°</option>
+      <option value="45">45°</option>
+    </select>
 
-  <label>ISO</label>
-  <select id="b_iso">
-    <option value="200">200</option>
-    <option value="400">400</option>
-    <option value="800" selected>800</option>
-    <option value="1600">1600</option>
-    <option value="3200">3200</option>
-  </select>
+    <label>ISO</label>
+    <select id="b_iso"></select>
 
-  <label>T-Stop</label>
-  <select id="b_t">
-    <option value="0">T1.0</option>
-    <option value="1">T1.4</option>
-    <option value="2">T2.0</option>
-    <option value="3">T2.8</option>
-    <option value="4">T4.0</option>
-    <option value="5">T5.6</option>
-    <option value="6">T8.0</option>
-    <option value="7">T11</option>
-    <option value="8">T16</option>
-    <option value="9">T22</option>
-  </select>
+    <label>T-Stop</label>
+    <select id="b_t">
+      <option value="0">T1.0</option>
+      <option value="1">T1.4</option>
+      <option value="2">T2.0</option>
+      <option value="3">T2.8</option>
+      <option value="4">T4.0</option>
+      <option value="5">T5.6</option>
+      <option value="6">T8.0</option>
+      <option value="7">T11</option>
+      <option value="8">T16</option>
+      <option value="9">T22</option>
+    </select>
 
-  <label>ND</label>
-  <select id="b_nd">
-    <option value="0">Clear</option>
-    <option value="1">0.3</option>
-    <option value="2">0.6</option>
-    <option value="3">0.9</option>
-    <option value="4">1.2</option>
-    <option value="5">1.5</option>
-  </select>
-</div>
+    <label>ND</label>
+    <select id="b_nd">
+      <option value="0">Clear</option>
+      <option value="1">0.3</option>
+      <option value="2">0.6</option>
+      <option value="3">0.9</option>
+      <option value="4">1.2</option>
+      <option value="5">1.5</option>
+    </select>
+  </div>
 
 </div>
 
