@@ -1,65 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Exposure Tool – Stop Discrete</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body{
-  background:#0b0b0b;
-  color:#fff;
-  font-family:system-ui,sans-serif;
-  padding:30px;
-}
-h1{
-  text-align:center;
-  margin-bottom:30px;
-}
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:30px;
-  max-width:900px;
-  margin:auto;
-}
-.card{
-  background:#111;
-  padding:20px;
-  border-radius:14px;
-}
-label{
-  font-size:12px;
-  opacity:.7;
-  margin-top:12px;
-  display:block;
-}
-select,input{
-  width:100%;
-  padding:10px;
-  background:#000;
-  border:1px solid #333;
-  color:#fff;
-  border-radius:8px;
-}
-button{
-  display:block;
-  margin:30px auto;
-  padding:12px 36px;
-  border-radius:999px;
-  border:none;
-  background:#fff;
-  color:#000;
-  cursor:pointer;
-}
-.result{
-  max-width:600px;
-  margin:0 auto;
-  background:#111;
-  padding:20px;
-  border-radius:14px;
-  font-family:ui-monospace,monospace;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>Exposure Tool (Stop-Discrete)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -67,106 +12,98 @@ button{
 
 <div class="grid">
 
-<!-- A -->
-<div class="card">
-<h3>A</h3>
+  <!-- A -->
+  <div class="card">
+    <h3>A</h3>
 
-<label>Frame Rate</label>
-<select id="a_fps">
-  <option value="25">25</option>
-  <option value="50">50</option>
-</select>
+    <label>Frame Rate</label>
+    <select id="a_fps">
+      <option value="25">25</option>
+      <option value="50">50</option>
+    </select>
 
-<label>Shutter Angle</label>
-<select id="a_shutter">
-  <option value="360">360°</option>
-  <option value="180" selected>180°</option>
-  <option value="90">90°</option>
-  <option value="45">45°</option>
-</select>
+    <label>Shutter Angle</label>
+    <select id="a_shutter">
+      <option value="360">360°</option>
+      <option value="180" selected>180°</option>
+      <option value="90">90°</option>
+      <option value="45">45°</option>
+    </select>
 
-<label>ISO</label>
-<select id="a_iso">
-  <option>200</option>
-  <option>400</option>
-  <option selected>800</option>
-  <option>1600</option>
-  <option>3200</option>
-</select>
+    <label>ISO</label>
+    <select id="a_iso">
+      <option>200</option>
+      <option>400</option>
+      <option selected>800</option>
+      <option>1600</option>
+      <option>3200</option>
+    </select>
 
-<label>T-Stop</label>
-<select id="a_t">
-  <option value="0">T1.0</option>
-  <option value="1">T1.4</option>
-  <option value="2">T2.0</option>
-  <option value="3">T2.8</option>
-  <option value="4">T4.0</option>
-  <option value="5">T5.6</option>
-  <option value="6">T8.0</option>
-  <option value="7">T11</option>
-</select>
+    <label>T-Stop</label>
+    <select id="a_t">
+      <option value="0">T1.0</option>
+      <option value="1">T1.4</option>
+      <option value="2">T2.0</option>
+      <option value="3">T2.8</option>
+      <option value="4">T4.0</option>
+      <option value="5">T5.6</option>
+      <option value="6">T8.0</option>
+      <option value="7">T11</option>
+    </select>
 
-<label>ND</label>
-<select id="a_nd">
-  <option value="0">Clear</option>
-  <option value="1">0.3</option>
-  <option value="2">0.6</option>
-  <option value="3">0.9</option>
-  <option value="4">1.2</option>
-  <option value="5">1.5</option>
-</select>
-</div>
+    <label>ND</label>
+    <select id="a_nd">
+      <option value="0">Clear</option>
+      <option value="1">0.3</option>
+      <option value="2">0.6</option>
+      <option value="3">0.9</option>
+      <option value="4">1.2</option>
+      <option value="5">1.5</option>
+    </select>
+  </div>
 
-<!-- B -->
-<div class="card">
-<h3>B</h3>
+  <!-- B -->
+  <div class="card">
+    <h3>B</h3>
 
-<label>Frame Rate</label>
-<select id="b_fps">
-  <option value="25">25</option>
-  <option value="50">50</option>
-</select>
+    <label>Frame Rate</label>
+    <select id="b_fps">
+      <option value="25">25</option>
+      <option value="50">50</option>
+    </select>
 
-<label>Shutter Angle</label>
-<select id="b_shutter">
-  <option value="360">360°</option>
-  <option value="180" selected>180°</option>
-  <option value="90">90°</option>
-  <option value="45">45°</option>
-</select>
+    <label>Shutter Angle</label>
+    <select id="b_shutter">
+      <option value="360">360°</option>
+      <option value="180" selected>180°</option>
+      <option value="90">90°</option>
+      <option value="45">45°</option>
+    </select>
 
-<label>ISO</label>
-<select id="b_iso">
-  <option>200</option>
-  <option selected>400</option>
-  <option>800</option>
-  <option>1600</option>
-  <option>3200</option>
-</select>
+    <label>ISO</label>
+    <select id="b_iso">
+      <option>200</option>
+      <option selected>400</option>
+      <option>800</option>
+      <option>1600</option>
+      <option>3200</option>
+    </select>
 
-<label>T-Stop (to calculate)</label>
-<select id="b_t">
-  <option value="">—</option>
-  <option value="0">T1.0</option>
-  <option value="1">T1.4</option>
-  <option value="2">T2.0</option>
-  <option value="3">T2.8</option>
-  <option value="4">T4.0</option>
-  <option value="5">T5.6</option>
-  <option value="6">T8.0</option>
-  <option value="7">T11</option>
-</select>
+    <label>T-Stop (to calculate)</label>
+    <select id="b_t" disabled>
+      <option>— calculated —</option>
+    </select>
 
-<label>ND</label>
-<select id="b_nd">
-  <option value="0">Clear</option>
-  <option value="1" selected>0.3</option>
-  <option value="2">0.6</option>
-  <option value="3">0.9</option>
-  <option value="4">1.2</option>
-  <option value="5">1.5</option>
-</select>
-</div>
+    <label>ND</label>
+    <select id="b_nd">
+      <option value="0">Clear</option>
+      <option value="1" selected>0.3</option>
+      <option value="2">0.6</option>
+      <option value="3">0.9</option>
+      <option value="4">1.2</option>
+      <option value="5">1.5</option>
+    </select>
+  </div>
 
 </div>
 
@@ -174,42 +111,6 @@ button{
 
 <div class="result" id="result"></div>
 
-<script>
-// shutter stop offsets relative to 25fps @ 180°
-function shutterStops(fps, angle){
-  let stops = 0;
-
-  if(fps === 50) stops -= 1;
-  if(angle === 360) stops += 1;
-  if(angle === 90) stops -= 1;
-  if(angle === 45) stops -= 2;
-
-  return stops;
-}
-
-function calculate(){
-  const aStops =
-    parseInt(a_t.value) +
-    Math.log2(b_iso.value / a_iso.value) +
-    shutterStops(+a_fps.value, +a_shutter.value) -
-    parseInt(a_nd.value);
-
-  const bBaseStops =
-    Math.log2(b_iso.value / a_iso.value) +
-    shutterStops(+b_fps.value, +b_shutter.value) -
-    parseInt(b_nd.value);
-
-  const delta = bBaseStops - aStops;
-
-  const resultT = parseInt(a_t.value) - delta;
-
-  const tScale = ["T1.0","T1.4","T2.0","T2.8","T4.0","T5.6","T8.0","T11"];
-
-  result.innerHTML =
-    `<strong>Result</strong><br>
-     Set B T-stop to: <strong>${tScale[resultT]}</strong>`;
-}
-</script>
-
+<script src="js/calculator.js"></script>
 </body>
 </html>
