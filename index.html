@@ -2,251 +2,242 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Exposure Calculator – Alexa Mini LF</title>
+<title>Exposure Calculator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  body {
-    background:#0b0b0b;
-    color:#fff;
-    font-family: system-ui, sans-serif;
-    padding:30px;
-  }
-  h1 {
-    font-size:18px;
-    opacity:.9;
-    margin-bottom:20px;
-  }
-  .grid {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:30px;
-    max-width:980px;
-    margin:auto;
-  }
-  .panel {
-    background:#111;
-    padding:20px;
-    border-radius:14px;
-  }
-  h2 {
-    font-size:14px;
-    opacity:.7;
-    margin-bottom:10px;
-  }
-  label {
-    font-size:12px;
-    opacity:.6;
-    margin-top:12px;
-    display:block;
-  }
-  input, select {
-    width:100%;
-    padding:9px;
-    background:#0b0b0b;
-    border:1px solid #333;
-    color:#fff;
-    border-radius:8px;
-    font-size:14px;
-  }
-  .row {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
-  }
-  .result {
-    margin-top:16px;
-    font-family: ui-monospace, monospace;
-    opacity:.85;
-  }
-  .hint {
-    font-size:11px;
-    opacity:.4;
-    margin-top:4px;
-  }
+body{
+  background:#0b0b0b;
+  color:#fff;
+  font-family: system-ui, sans-serif;
+  padding:30px;
+}
+h1{
+  text-align:center;
+  font-size:18px;
+  opacity:.9;
+  margin-bottom:25px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:30px;
+  max-width:1200px;
+  margin:auto;
+}
+.panel{
+  background:#111;
+  padding:20px;
+  border-radius:14px;
+}
+label{
+  font-size:12px;
+  opacity:.6;
+  margin-top:12px;
+  display:block;
+}
+input, select{
+  width:100%;
+  padding:9px;
+  background:#0b0b0b;
+  border:1px solid #333;
+  color:#fff;
+  border-radius:8px;
+  font-size:14px;
+}
+.row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.radio-group{
+  margin-top:15px;
+  font-size:13px;
+}
+.radio-group label{
+  display:block;
+  margin:4px 0;
+  opacity:.85;
+}
+button{
+  display:block;
+  margin:30px auto 20px;
+  padding:12px 28px;
+  font-size:14px;
+  background:#fff;
+  color:#000;
+  border:none;
+  border-radius:999px;
+  cursor:pointer;
+}
+.result{
+  text-align:center;
+  font-family: ui-monospace, monospace;
+  opacity:.9;
+  margin-top:10px;
+}
+.disabled{
+  opacity:.4;
+}
 </style>
 </head>
 <body>
 
-<h1>Exposure Match Tool — ARRI Alexa Mini LF</h1>
+<h1>Exposure Calculator</h1>
 
 <div class="grid">
 
-  <!-- LEFT -->
-  <div class="panel">
-    <h2>Source exposure</h2>
+<!-- SOURCE -->
+<div class="panel">
+<h2>Source Exposure</h2>
 
-    <label>T-Stop</label>
-    <select id="l_t_std">
-      <option value="1">T1.0</option>
-      <option value="1.4">T1.4</option>
-      <option value="2">T2.0</option>
-      <option value="2.8" selected>T2.8</option>
-      <option value="4">T4.0</option>
-      <option value="5.6">T5.6</option>
-      <option value="8">T8</option>
-      <option value="11">T11</option>
-      <option value="16">T16</option>
-      <option value="22">T22</option>
-    </select>
-    <input id="l_t_custom" type="number" step="0.01" placeholder="Custom T (optional)">
-    <div class="hint">Custom overrides dropdown</div>
+<label>Camera</label>
+<select id="l_cam">
+  <option value="alexa">ARRI Alexa Mini LF</option>
+  <option value="venice">Sony VENICE</option>
+</select>
 
-    <label>ISO</label>
-    <select id="l_iso">
-      <option>160</option><option>200</option><option>250</option><option>320</option>
-      <option>400</option><option>500</option><option>640</option>
-      <option selected>800</option>
-      <option>1000</option><option>1280</option><option>1600</option>
-      <option>2000</option><option>2560</option><option>3200</option>
-    </select>
+<label>T-Stop</label>
+<input id="l_t" type="number" step="0.01" value="2.8">
 
-    <label>ND (stops)</label>
-    <select id="l_nd">
-      <option value="0">Clear</option>
-      <option value="0.3">0.3</option><option value="0.6">0.6</option>
-      <option value="0.9">0.9</option><option value="1.2">1.2</option>
-      <option value="1.5">1.5</option><option value="1.8">1.8</option>
-      <option value="2.1">2.1</option><option value="2.4">2.4</option>
-      <option value="2.7">2.7</option><option value="3.0">3.0</option>
-    </select>
+<label>ISO</label>
+<select id="l_iso"></select>
 
-    <div class="row">
-      <div>
-        <label>Shutter angle (°)</label>
-        <input id="l_shutter" type="number" min="5" max="356" value="180">
-      </div>
-      <div>
-        <label>Frame rate</label>
-        <input id="l_fps" type="number" value="25">
-      </div>
-    </div>
+<label>ND (stops)</label>
+<select id="l_nd"></select>
+
+<div class="row">
+  <div>
+    <label>Shutter Angle (°)</label>
+    <input id="l_sh" type="number" value="180">
   </div>
-
-  <!-- RIGHT -->
-  <div class="panel">
-    <h2>Target exposure (leave ONE empty)</h2>
-
-    <label>T-Stop</label>
-    <select id="r_t_std">
-      <option value="">—</option>
-      <option value="1">T1.0</option>
-      <option value="1.4">T1.4</option>
-      <option value="2">T2.0</option>
-      <option value="2.8">T2.8</option>
-      <option value="4">T4.0</option>
-      <option value="5.6">T5.6</option>
-      <option value="8">T8</option>
-      <option value="11">T11</option>
-      <option value="16">T16</option>
-      <option value="22">T22</option>
-    </select>
-    <input id="r_t_custom" type="number" step="0.01" placeholder="Custom T (optional)">
-
-    <label>ISO</label>
-    <select id="r_iso">
-      <option value="">—</option>
-      <option>160</option><option>200</option><option>250</option><option>320</option>
-      <option>400</option><option>500</option><option>640</option>
-      <option>800</option><option>1000</option><option>1280</option>
-      <option>1600</option><option>2000</option><option>2560</option><option>3200</option>
-    </select>
-
-    <label>ND (stops)</label>
-    <select id="r_nd">
-      <option value="">—</option>
-      <option value="0">Clear</option>
-      <option value="0.3">0.3</option><option value="0.6">0.6</option>
-      <option value="0.9">0.9</option><option value="1.2">1.2</option>
-      <option value="1.5">1.5</option><option value="1.8">1.8</option>
-      <option value="2.1">2.1</option><option value="2.4">2.4</option>
-      <option value="2.7">2.7</option><option value="3.0">3.0</option>
-    </select>
-
-    <div class="row">
-      <div>
-        <label>Shutter angle (°)</label>
-        <input id="r_shutter" type="number" min="5" max="356">
-      </div>
-      <div>
-        <label>Frame rate</label>
-        <input id="r_fps" type="number">
-      </div>
-    </div>
-
-    <div class="result" id="result"></div>
+  <div>
+    <label>Frame Rate</label>
+    <input id="l_fps" type="number" value="25">
   </div>
-
+</div>
 </div>
 
+<!-- TARGET -->
+<div class="panel">
+<h2>Target Exposure</h2>
+
+<label>Camera</label>
+<select id="r_cam">
+  <option value="alexa">ARRI Alexa Mini LF</option>
+  <option value="venice">Sony VENICE</option>
+</select>
+
+<div class="radio-group">
+<strong>Calculate:</strong>
+<label><input type="radio" name="calc" value="t"> T-Stop</label>
+<label><input type="radio" name="calc" value="iso"> ISO</label>
+<label><input type="radio" name="calc" value="nd" checked> ND</label>
+<label><input type="radio" name="calc" value="sh"> Shutter Angle</label>
+<label><input type="radio" name="calc" value="fps"> Frame Rate</label>
+</div>
+
+<label>T-Stop</label>
+<input id="r_t" type="number" step="0.01">
+
+<label>ISO</label>
+<select id="r_iso"></select>
+
+<label>ND (stops)</label>
+<select id="r_nd"></select>
+
+<div class="row">
+  <div>
+    <label>Shutter Angle (°)</label>
+    <input id="r_sh" type="number">
+  </div>
+  <div>
+    <label>Frame Rate</label>
+    <input id="r_fps" type="number">
+  </div>
+</div>
+</div>
+</div>
+
+<button onclick="calculate()">CALCULATE</button>
+<div class="result" id="result"></div>
+
 <script>
-const log2 = x => Math.log(x)/Math.log(2);
-const shutterTime = (a,f)=> (a/360)*(1/f);
+const cams = {
+  alexa:{
+    iso:[160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],
+    shMin:5, shMax:356, defISO:800
+  },
+  venice:{
+    iso:[125,160,200,250,320,400,"500 (N1)",640,800,1000,1250,1600,2000,"2500 (N2)",3200,4000,5000,6400,8000,10000],
+    shMin:4.2, shMax:360, defISO:500
+  }
+};
 
-function T(std, custom){
-  return custom ? parseFloat(custom) : parseFloat(std);
+const nds=[0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,2.7,3.0];
+
+function fill(cam,isoEl,ndEl){
+  isoEl.innerHTML="";
+  cams[cam].iso.forEach(v=>{
+    let o=document.createElement("option");
+    o.value=parseFloat(v);
+    o.text=v;
+    isoEl.appendChild(o);
+  });
+  ndEl.innerHTML="";
+  nds.forEach(v=>{
+    let o=document.createElement("option");
+    o.value=v;
+    o.text=v===0?"Clear":v;
+    ndEl.appendChild(o);
+  });
 }
 
-function exposure(t, iso, nd, sh, fps){
-  return log2(iso * shutterTime(sh,fps) / (t*t) / Math.pow(2,nd));
+fill("alexa",l_iso,l_nd);
+fill("alexa",r_iso,r_nd);
+
+l_cam.onchange=()=>fill(l_cam.value,l_iso,l_nd);
+r_cam.onchange=()=>fill(r_cam.value,r_iso,r_nd);
+
+const log2=x=>Math.log(x)/Math.log(2);
+const shutter=(a,f)=>(a/360)*(1/f);
+
+function exposure(t,iso,nd,sh,fps){
+  return log2(iso*shutter(sh,fps)/(t*t)/Math.pow(2,nd));
 }
 
-function recalc(){
-  const lT = T(l_t_std.value, l_t_custom.value);
-  const lISO = +l_iso.value;
-  const lND = +l_nd.value;
-  const lSh = +l_shutter.value;
-  const lFPS = +l_fps.value;
+function calculate(){
+  const base=exposure(+l_t.value,+l_iso.value,+l_nd.value,+l_sh.value,+l_fps.value);
+  const mode=document.querySelector("input[name=calc]:checked").value;
+  let out="";
 
-  const baseExp = exposure(lT,lISO,lND,lSh,lFPS);
-
-  const r = {
-    t: r_t_custom.value || r_t_std.value,
-    iso: r_iso.value,
-    nd: r_nd.value,
-    sh: r_shutter.value,
-    fps: r_fps.value
-  };
-
-  const empty = Object.keys(r).filter(k => r[k]==="");
-  if(empty.length !== 1){
-    result.innerText = "Leave exactly ONE field empty.";
-    return;
+  if(mode==="nd"){
+    const v=log2((+r_iso.value*shutter(+r_sh.value,+r_fps.value))/(Math.pow(+r_t.value,2)*Math.pow(2,base)));
+    r_nd.value=v.toFixed(2);
+    out=`ND = ${v.toFixed(2)} stops`;
+  }
+  if(mode==="iso"){
+    const v=Math.pow(2,base)*Math.pow(+r_t.value,2)*Math.pow(2,+r_nd.value)/shutter(+r_sh.value,+r_fps.value);
+    r_iso.value=Math.round(v);
+    out=`ISO = ${Math.round(v)}`;
+  }
+  if(mode==="t"){
+    const v=Math.sqrt((+r_iso.value*shutter(+r_sh.value,+r_fps.value))/(Math.pow(2,+r_nd.value)*Math.pow(2,base)));
+    r_t.value=v.toFixed(2);
+    out=`T-Stop = T${v.toFixed(2)}`;
+  }
+  if(mode==="sh"){
+    const v=(Math.pow(2,base)*Math.pow(+r_t.value,2)*Math.pow(2,+r_nd.value)/+r_iso.value)*360*+r_fps.value;
+    r_sh.value=v.toFixed(1);
+    out=`Shutter = ${v.toFixed(1)}°`;
+  }
+  if(mode==="fps"){
+    const v=(+r_sh.value/360)/(Math.pow(2,base)*Math.pow(+r_t.value,2)*Math.pow(2,+r_nd.value)/+r_iso.value);
+    r_fps.value=v.toFixed(2);
+    out=`FPS = ${v.toFixed(2)}`;
   }
 
-  const k = empty[0];
-  let v;
-
-  if(k==="t"){
-    v = Math.sqrt(
-      (+r_iso.value * shutterTime(+r_shutter.value,+r_fps.value)) /
-      (Math.pow(2,+r_nd.value) * Math.pow(2,baseExp))
-    );
-    r_t_custom.value = v.toFixed(2);
-  }
-  if(k==="iso"){
-    v = Math.pow(2,baseExp) * Math.pow(T(r_t_std.value,r_t_custom.value),2) * Math.pow(2,+r_nd.value) / shutterTime(+r_shutter.value,+r_fps.value);
-    r_iso.value = Math.round(v);
-  }
-  if(k==="nd"){
-    v = log2(
-      (+r_iso.value * shutterTime(+r_shutter.value,+r_fps.value)) /
-      (Math.pow(T(r_t_std.value,r_t_custom.value),2) * Math.pow(2,baseExp))
-    );
-    r_nd.value = v.toFixed(2);
-  }
-  if(k==="sh"){
-    v = (Math.pow(2,baseExp) * Math.pow(T(r_t_std.value,r_t_custom.value),2) * Math.pow(2,+r_nd.value) / +r_iso.value) * 360 * +r_fps.value;
-    r_shutter.value = v.toFixed(0);
-  }
-  if(k==="fps"){
-    v = ( (+r_shutter.value/360) / (Math.pow(2,baseExp) * Math.pow(T(r_t_std.value,r_t_custom.value),2) * Math.pow(2,+r_nd.value) / +r_iso.value) );
-    r_fps.value = v.toFixed(2);
-  }
-
-  result.innerText = `Calculated: ${k.toUpperCase()}`;
+  result.innerText=out;
 }
-
-document.querySelectorAll("input,select").forEach(e=>e.addEventListener("input",recalc));
 </script>
 
 </body>
