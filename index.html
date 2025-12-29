@@ -2,203 +2,141 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Exposure Calculator</title>
+<title>Exposure Tool – Stop Based</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{background:#0b0b0b;color:#fff;font-family:system-ui,sans-serif;padding:30px}
-h1{text-align:center;font-size:18px;margin-bottom:30px;opacity:.9}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;max-width:1200px;margin:auto}
-.card{background:#111;padding:22px;border-radius:16px}
-h2{font-size:14px;opacity:.7;margin-bottom:14px}
-label{font-size:12px;opacity:.6;margin-top:12px;display:block}
-input,select{width:100%;padding:10px;background:#0b0b0b;border:1px solid #333;color:#fff;border-radius:10px;font-size:14px}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.calc-block{margin-top:20px;padding-top:10px;border-top:1px solid #222}
-button{display:block;margin:30px auto 20px;padding:12px 36px;border-radius:999px;border:none;background:#fff;color:#000;font-size:14px;cursor:pointer}
-.result{max-width:760px;margin:0 auto;background:#111;border-radius:16px;padding:20px;font-family:ui-monospace,monospace;line-height:1.6}
-.result strong{display:block;margin-bottom:6px}
+body{
+  background:#0b0b0b;
+  color:#fff;
+  font-family:system-ui,sans-serif;
+  padding:30px;
+}
+h1{text-align:center;margin-bottom:30px}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:30px;
+  max-width:900px;
+  margin:auto;
+}
+.card{
+  background:#111;
+  padding:20px;
+  border-radius:14px;
+}
+label{
+  font-size:12px;
+  opacity:.7;
+  margin-top:12px;
+  display:block;
+}
+input,select{
+  width:100%;
+  padding:10px;
+  background:#000;
+  border:1px solid #333;
+  color:#fff;
+  border-radius:8px;
+}
+button{
+  display:block;
+  margin:30px auto;
+  padding:12px 32px;
+  border-radius:999px;
+  border:none;
+  background:#fff;
+  color:#000;
+  cursor:pointer;
+}
+.result{
+  max-width:600px;
+  margin:0 auto;
+  background:#111;
+  padding:20px;
+  border-radius:14px;
+  font-family:ui-monospace,monospace;
+}
 </style>
 </head>
 <body>
 
-<h1>Exposure Calculator</h1>
+<h1>Exposure Tool (Stop Logic)</h1>
 
 <div class="grid">
 
-<!-- SOURCE -->
 <div class="card">
-<h2>Source Exposure</h2>
+<h3>A</h3>
 
-<label>Camera</label>
-<select id="l_cam"></select>
-
-<label>T-Stop</label>
-<input id="l_t" type="number" step="0.01" value="2.8">
+<label>FPS</label>
+<input id="a_fps" value="25">
 
 <label>ISO</label>
-<select id="l_iso"></select>
+<input id="a_iso" value="800">
 
-<label>ND (stops)</label>
-<input id="l_nd" type="number" step="0.1" value="0.3">
+<label>T-stop</label>
+<input id="a_t" value="2.8">
 
-<div class="row">
-  <div>
-    <label>Shutter Angle (°)</label>
-    <input id="l_sh" type="number" value="180">
-  </div>
-  <div>
-    <label>Frame Rate</label>
-    <input id="l_fps" type="number" value="25">
-  </div>
-</div>
+<label>Shutter angle</label>
+<input id="a_sh" value="180">
+
+<label>ND</label>
+<input id="a_nd" value="0.0">
 </div>
 
-<!-- TARGET -->
 <div class="card">
-<h2>Target Exposure</h2>
+<h3>B</h3>
 
-<label>Camera</label>
-<select id="r_cam"></select>
-
-<div class="calc-block">
-<strong>Calculate:</strong>
-<label><input type="radio" name="calc" value="nd" checked> ND</label>
-<label><input type="radio" name="calc" value="iso"> ISO</label>
-<label><input type="radio" name="calc" value="t"> T-Stop</label>
-<label><input type="radio" name="calc" value="sh"> Shutter Angle</label>
-</div>
-
-<label>T-Stop</label>
-<input id="r_t" type="number" step="0.01" value="2.0">
+<label>FPS</label>
+<input id="b_fps" value="50">
 
 <label>ISO</label>
-<select id="r_iso"></select>
+<input id="b_iso" value="800">
 
-<label>ND (stops)</label>
-<input id="r_nd" type="number" step="0.1" value="0">
+<label>T-stop</label>
+<input id="b_t" placeholder="leave empty">
 
-<div class="row">
-  <div>
-    <label>Shutter Angle (°)</label>
-    <input id="r_sh" type="number" value="180">
-  </div>
-  <div>
-    <label>Frame Rate</label>
-    <input id="r_fps" type="number" value="25">
-  </div>
-</div>
+<label>Shutter angle</label>
+<input id="b_sh" value="180">
+
+<label>ND</label>
+<input id="b_nd" value="0.3">
 </div>
 
 </div>
 
-<button onclick="calculate()">CALCULATE</button>
+<button onclick="calculate()">CALCULATE T-STOP</button>
+
 <div class="result" id="result"></div>
 
 <script>
-// ---------- CAMERA PRESETS ----------
-const CAMS={
-  alexa:{name:"ARRI Alexa Mini LF",iso:[160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],defaultISO:800},
-  venice:{name:"Sony VENICE",iso:[125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,4000,5000,6400,8000,10000],defaultISO:500}
-};
-const ND_STEPS=[0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,2.7,3.0];
+const log2 = x => Math.log(x)/Math.log(2);
+const shutterTime = (fps,angle)=>(angle/360)*(1/fps);
 
-// ---------- HELPERS ----------
-const log2=x=>Math.log(x)/Math.log(2);
-const shutterTime=(a,f)=>(a/360)*(1/f);
-const nearest=(v,arr)=>arr.reduce((a,b)=>Math.abs(b-v)<Math.abs(a-v)?b:a);
-const neighbors=(v,arr)=>{
-  const s=[...arr].sort((a,b)=>a-b);
-  let lo=s[0],hi=s[s.length-1];
-  for(const x of s){ if(x<=v) lo=x; if(x>=v){hi=x;break;} }
-  return [lo,hi];
-};
-
-// ---------- INIT ----------
-function fillCams(){
-  [l_cam,r_cam].forEach(sel=>{
-    sel.innerHTML="";
-    Object.keys(CAMS).forEach(k=>{
-      const o=document.createElement("option");
-      o.value=k;o.text=CAMS[k].name;sel.appendChild(o);
-    });
-  });
-  l_cam.value="alexa"; r_cam.value="alexa";
-  fillISO(l_cam,l_iso); fillISO(r_cam,r_iso);
-}
-function fillISO(camSel,isoSel){
-  const cam=CAMS[camSel.value];
-  isoSel.innerHTML="";
-  cam.iso.forEach(v=>{const o=document.createElement("option");o.value=v;o.text=v;isoSel.appendChild(o);});
-  isoSel.value=cam.defaultISO;
-}
-l_cam.onchange=()=>fillISO(l_cam,l_iso);
-r_cam.onchange=()=>fillISO(r_cam,r_iso);
-fillCams();
-
-// ---------- CALC ----------
 function calculate(){
-  const mode=document.querySelector("input[name=calc]:checked").value;
-  let out="";
+  const aFPS=+a_fps.value, bFPS=+b_fps.value;
+  const aISO=+a_iso.value, bISO=+b_iso.value;
+  const aT=+a_t.value;
+  const aSh=+a_sh.value, bSh=+b_sh.value;
+  const aND=+a_nd.value, bND=+b_nd.value;
 
-  if(mode==="nd"){
-    // RELATIVE STOPS (CORRECT)
-    const tStops = 2*log2(+l_t.value / +r_t.value);
-    const isoStops = log2(+r_iso.value / +l_iso.value);
-    const shStops = log2(
-      shutterTime(+r_sh.value,+r_fps.value) /
-      shutterTime(+l_sh.value,+l_fps.value)
-    );
-    const exactND = tStops + isoStops + shStops - +l_nd.value;
+  // Stops
+  const stopsISO = log2(bISO/aISO);
+  const stopsShutter = log2(
+    shutterTime(bFPS,bSh)/shutterTime(aFPS,aSh)
+  );
+  const stopsND = (aND - bND)/0.3;
 
-    const ndSet = Math.max(0, nearest(exactND, ND_STEPS));
-    const remaining = exactND - ndSet;
+  // Total stops that T must compensate
+  const totalStops = -(stopsISO + stopsShutter + stopsND);
 
-    out+=`<strong>Set camera ND to:</strong> ${ndSet.toFixed(1)}<br>`;
-    out+=`Exact ND needed: ${exactND.toFixed(2)} stops<br><br>`;
+  // Solve T
+  const bT = aT / Math.pow(2, totalStops/2);
 
-    if(Math.abs(remaining)<0.01){
-      out+=`No further compensation needed.`;
-      result.innerHTML=out; return;
-    }
-
-    out+=`<strong>Remaining difference:</strong> ${remaining>0?"+":""}${remaining.toFixed(2)} stop<br><br>`;
-
-    const cam=CAMS[r_cam.value];
-    const isoExact = +r_iso.value * Math.pow(2, remaining);
-    const [isoLo,isoHi]=neighbors(isoExact, cam.iso);
-    const tNew = +r_t.value / Math.sqrt(Math.pow(2, remaining));
-
-    out+=`Compensate with:<br>`;
-    out+=`• ISO option A: ${r_iso.value} → ${isoLo}<br>`;
-    out+=`• ISO option B: ${r_iso.value} → ${isoHi}<br>`;
-    out+=`• or T-Stop: T${r_t.value} → T${tNew.toFixed(2)} (exact)`;
-
-    result.innerHTML=out; return;
-  }
-
-  if(mode==="iso"){
-    const isoExact = Math.pow(2, 2*log2(+l_t.value/+r_t.value) - +l_nd.value)
-      * (+l_iso.value) * (shutterTime(+l_sh.value,+l_fps.value)/shutterTime(+r_sh.value,+r_fps.value));
-    const isoSet = nearest(isoExact, CAMS[r_cam.value].iso);
-    result.innerHTML=`<strong>Set ISO to:</strong> ${isoSet}`; return;
-  }
-
-  if(mode==="t"){
-    const tNew = +l_t.value * Math.sqrt(
-      (shutterTime(+l_sh.value,+l_fps.value)/shutterTime(+r_sh.value,+r_fps.value)) *
-      (+l_iso.value/+r_iso.value) * Math.pow(2,+l_nd.value)
-    );
-    result.innerHTML=`<strong>Set T-Stop to:</strong> T${tNew.toFixed(2)}`; return;
-  }
-
-  if(mode==="sh"){
-    const shNew = +l_sh.value * (
-      (shutterTime(+r_sh.value,+r_fps.value)/shutterTime(+l_sh.value,+l_fps.value)) *
-      Math.pow(+r_t.value/+l_t.value,2) * (+r_iso.value/+l_iso.value) * Math.pow(2,-+l_nd.value)
-    );
-    result.innerHTML=`<strong>Set Shutter Angle to:</strong> ${shNew.toFixed(1)}°`; return;
-  }
+  result.innerHTML =
+    `<strong>Result</strong><br>
+     Set B T-stop to: <strong>T${bT.toFixed(2)}</strong>`;
 }
 </script>
+
 </body>
 </html>
