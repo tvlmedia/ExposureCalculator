@@ -9,7 +9,6 @@ const CAMERA_DATA = {
     iso: [160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],
     nd: { type: "fixed", values: [0,0.3,0.6,0.9,1.2,1.5] }
   },
-
   venice: {
     iso: [
       125,160,200,250,320,400,500,
@@ -18,14 +17,13 @@ const CAMERA_DATA = {
     ],
     nd: { type: "fixed", values: [0,0.3,0.6,0.9,1.2,1.5] }
   },
-
   eterna: {
     iso: [
       125,160,200,250,320,400,500,
       640,800,1000,1250,1600,2000,
       2500,3200,4000,5000,6400,8000,10000
     ],
-    nd: { type: "eterna" } // speciaal
+    nd: { type: "eterna" }
   }
 };
 
@@ -40,21 +38,10 @@ const REF_SHUTTER = 1 / 50;
    PHYSICS
 ========================= */
 
-function isoStops(iso){
-  return Math.log2(iso / 800);
-}
-
-function shutterSpeed(fps, angle){
-  return (angle / 360) * (1 / fps);
-}
-
-function shutterStops(fps, angle){
-  return Math.log2(shutterSpeed(fps, angle) / REF_SHUTTER);
-}
-
-function tStops(t){
-  return -2 * Math.log2(t / REF_T);
-}
+function isoStops(iso){ return Math.log2(iso / 800); }
+function shutterSpeed(fps, angle){ return (angle / 360) * (1 / fps); }
+function shutterStops(fps, angle){ return Math.log2(shutterSpeed(fps, angle) / REF_SHUTTER); }
+function tStops(t){ return -2 * Math.log2(t / REF_T); }
 
 function exposure(fps, angle, iso, t, nd){
   return isoStops(iso) + shutterStops(fps, angle) + tStops(t) - nd;
@@ -76,14 +63,11 @@ function populateISO(select, cam){
 
 function populateND(select, cam){
   select.innerHTML = "";
-  const nd = CAMERA_DATA[cam].nd;
-
   let values = [];
 
-  if (nd.type === "fixed"){
-    values = nd.values;
+  if (CAMERA_DATA[cam].nd.type === "fixed"){
+    values = CAMERA_DATA[cam].nd.values;
   } else {
-    // ETERNA: 0.6 → 2.1 in 0.05 + 2.4
     for (let v=0.6; v<=2.1+0.0001; v+=0.05){
       values.push(Number(v.toFixed(2)));
     }
@@ -102,7 +86,7 @@ function populateND(select, cam){
 }
 
 /* =========================
-   T CUSTOM
+   T-STOP CUSTOM
 ========================= */
 
 function toggleCustomT(side){
@@ -118,32 +102,36 @@ function getT(side){
 }
 
 /* =========================
-   UI MODE HANDLING
+   MODE UI (FIXED)
 ========================= */
-
-const MODES = ["t","iso","nd","shutter","fps"];
 
 function updateModeUI(){
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  const map = {
-    t: b_t,
-    iso: b_iso,
-    nd: b_nd,
-    shutter: b_shutter,
-    fps: b_fps
-  };
-
-  Object.values(map).forEach(el=>{
+  const all = [b_iso, b_nd, b_shutter, b_fps, b_t];
+  all.forEach(el=>{
     el.disabled = false;
     el.classList.remove("calculated");
   });
 
-  const target = map[mode];
-  target.disabled = true;
-  target.classList.add("calculated");
+  // reset T custom input
+  b_t_custom.style.display = (b_t.value === "custom") ? "block" : "none";
 
-  target.innerHTML = `<option>— calculated —</option>`;
+  // only lock the actual calculated field
+  if (mode === "iso") lockField(b_iso);
+  if (mode === "nd") lockField(b_nd);
+  if (mode === "shutter") lockField(b_shutter);
+  if (mode === "fps") lockField(b_fps);
+  if (mode === "t"){
+    lockField(b_t);
+    b_t_custom.style.display = "none";
+  }
+}
+
+function lockField(select){
+  select.disabled = true;
+  select.classList.add("calculated");
+  select.innerHTML = `<option>— calculated —</option>`;
 }
 
 /* =========================
@@ -151,7 +139,6 @@ function updateModeUI(){
 ========================= */
 
 function calculate(){
-
   const mode = document.querySelector("input[name='calc']:checked").value;
 
   const EA = exposure(
