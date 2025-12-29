@@ -8,7 +8,10 @@ const CAMERA_DATA = {
   arri: {
     iso: [160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],
     native: [800],
-    nd: { start: 0.0, step: 0.3 }
+    nd: {
+      internal: null,
+      externalStep: 0.3
+    }
   },
 
   venice: {
@@ -18,18 +21,27 @@ const CAMERA_DATA = {
       2500,3200,4000,5000,6400,8000,10000
     ],
     native: [500, 2500],
-    nd: { start: 0.0, step: 0.3 }
+    nd: {
+      internal: null,
+      externalStep: 0.3
+    }
   },
 
   eterna: {
-    // voorlopig Venice-achtig ISO, zoals afgesproken
     iso: [
       125,160,200,250,320,400,500,
       640,800,1000,1250,1600,2000,
       2500,3200,4000,5000,6400,8000,10000
     ],
     native: [800, 3200],
-    nd: { start: 0.6, step: 0.05 }
+    nd: {
+      internal: {
+        start: 0.6,
+        end: 2.1,
+        step: 0.05
+      },
+      externalStep: 0.3
+    }
   }
 };
 
@@ -56,7 +68,6 @@ function shutterStops(fps, angle){
   return Math.log2(shutterSpeed(fps, angle) / REF_SHUTTER);
 }
 
-// Physically correct T-stop → stops
 function tStops(t){
   return -2 * Math.log2(t / REF_T);
 }
@@ -114,15 +125,47 @@ function toggleCustomT(side){
 }
 
 /* =========================
+   ND SOLVER (CAMERA AWARE)
+========================= */
+
+function solveND(cameraKey, ndStops){
+  const nd = CAMERA_DATA[cameraKey].nd;
+
+  // Geen interne ND (ARRI / VENICE)
+  if (!nd.internal){
+    const value =
+      Math.round(ndStops / nd.externalStep) * nd.externalStep;
+    return value;
+  }
+
+  // EERST: interne ND proberen
+  const internal = nd.internal;
+  const internalValue = internal.start + ndStops;
+
+  if (internalValue <= internal.end){
+    return (
+      Math.round(internalValue / internal.step) * internal.step
+    );
+  }
+
+  // DAARNA: fysieke ND’s
+  const remaining =
+    internalValue - internal.end;
+
+  return (
+    internal.end +
+    Math.round(remaining / nd.externalStep) * nd.externalStep
+  );
+}
+
+/* =========================
    CALCULATION
 ========================= */
 
 function calculate(){
 
   const mode = document.querySelector("input[name='calc']:checked").value;
-
   const camB = camera_b.value;
-  const ndProfile = CAMERA_DATA[camB].nd;
 
   // ---- A ----
   const tA = getTValue(a_t, a_t_custom);
@@ -136,7 +179,7 @@ function calculate(){
   );
 
   // ---- B ----
-  const tB = getTValue(b_t, b_t_custom);
+  const tB   = getTValue(b_t, b_t_custom);
   const fpsB = +b_fps.value;
   const angB = +b_shutter.value;
   const isoB = +b_iso.value;
@@ -192,13 +235,10 @@ function calculate(){
       return;
     }
 
-    // Camera-aware ND rounding
-    const rawND = ndProfile.start + ndStops;
-    const roundedND =
-      Math.round(rawND / ndProfile.step) * ndProfile.step;
+    const ndValue = solveND(camB, ndStops);
 
     result.innerHTML =
-      `Set B ND to <strong>${roundedND.toFixed(2)}</strong>
+      `Set B ND to <strong>${ndValue.toFixed(2)}</strong>
        <br><small>(${ndStops.toFixed(2)} stops)</small>`;
     return;
   }
