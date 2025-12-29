@@ -23,7 +23,7 @@ const CAMERA_ISO = {
 ========================= */
 
 const ND_STEP = 0.3;
-const REF_T = 2.8;            // T2.8 = 0.00 stop
+const REF_T = 2.8;            // referentie: T2.8 = 0.00 stop
 const REF_SHUTTER = 1 / 50;   // 25fps @ 180°
 
 /* =========================
@@ -35,7 +35,7 @@ function isoStops(iso){
   return Math.log2(iso / 800);
 }
 
-// Shutter speed (seconds)
+// Shutter speed (seconden)
 function shutterSpeed(fps, angle){
   return (angle / 360) * (1 / fps);
 }
@@ -45,12 +45,12 @@ function shutterStops(fps, angle){
   return Math.log2(shutterSpeed(fps, angle) / REF_SHUTTER);
 }
 
-// T-stop → stops (PHYSICALLY CORRECT)
+// T-stop → stops (fysisch correct)
 function tStops(t){
   return -2 * Math.log2(t / REF_T);
 }
 
-// Total exposure (stops)
+// Totale exposure in stops
 function exposure(fps, angle, iso, t, ndStops){
   return (
     isoStops(iso) +
@@ -81,7 +81,7 @@ function populateISO(selectEl, cameraKey){
 }
 
 /* =========================
-   UI HELPERS
+   T-STOP HELPERS
 ========================= */
 
 function getTValue(selectEl, inputEl){
@@ -95,6 +95,8 @@ function toggleCustomT(side){
   const select = document.getElementById(`${side}_t`);
   const input  = document.getElementById(`${side}_t_custom`);
 
+  if (!input) return;
+
   if (select.value === "custom"){
     input.style.display = "block";
     input.focus();
@@ -104,7 +106,67 @@ function toggleCustomT(side){
 }
 
 /* =========================
-   CALCULATION
+   UI STATE HANDLING
+========================= */
+
+document.querySelectorAll("input[name='calc']")
+  .forEach(r => r.addEventListener("change", updateUI));
+
+camera_a.addEventListener("change", () => {
+  populateISO(a_iso, camera_a.value);
+});
+
+camera_b.addEventListener("change", () => {
+  populateISO(b_iso, camera_b.value);
+});
+
+function updateUI(){
+  const mode = document.querySelector("input[name='calc']:checked").value;
+
+  const allB = [b_fps, b_shutter, b_iso, b_t, b_nd];
+
+  allB.forEach(el => {
+    el.disabled = false;
+    el.classList.remove("calculated");
+  });
+
+  if (b_t_custom){
+    b_t_custom.disabled = false;
+  }
+
+  if (mode === "t"){
+    b_t.disabled = true;
+    b_t.classList.add("calculated");
+    if (b_t_custom){
+      b_t_custom.disabled = true;
+    }
+  }
+
+  if (mode === "iso"){
+    b_iso.disabled = true;
+    b_iso.classList.add("calculated");
+  }
+
+  if (mode === "nd"){
+    b_nd.disabled = true;
+    b_nd.classList.add("calculated");
+  }
+
+  if (mode === "shutter"){
+    b_shutter.disabled = true;
+    b_shutter.classList.add("calculated");
+  }
+
+  if (mode === "fps"){
+    b_fps.disabled = true;
+    b_fps.classList.add("calculated");
+  }
+
+  result.innerHTML = "Result will appear here…";
+}
+
+/* =========================
+   CORE CALCULATION
 ========================= */
 
 function calculate(){
@@ -231,3 +293,4 @@ function calculate(){
 
 populateISO(a_iso, camera_a.value);
 populateISO(b_iso, camera_b.value);
+updateUI();
