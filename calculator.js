@@ -46,8 +46,14 @@ function exposure(fps, angle, iso, tIndex, ndStops){
   return isoStops(iso) + shutterStops(fps, angle) - tIndex - ndStops;
 }
 
+function nearestISO(value, list){
+  return list.reduce((a,b) =>
+    Math.abs(b - value) < Math.abs(a - value) ? b : a
+  );
+}
+
 /* =========================
-   ISO POPULATION (A & B)
+   ISO POPULATION
 ========================= */
 
 function populateISO(selectEl, cameraKey){
@@ -63,7 +69,6 @@ function populateISO(selectEl, cameraKey){
     selectEl.appendChild(opt);
   });
 
-  // behoud vorige waarde indien mogelijk, anders 800
   selectEl.value = values.includes(prev) ? prev : 800;
 }
 
@@ -85,12 +90,10 @@ document.querySelectorAll("input[name='calc']")
 function updateUI(){
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  // reset
   [b_t, b_iso, b_nd, b_shutter, b_fps].forEach(el => {
     el.classList.remove("calculated");
   });
 
-  // grey only target
   if (mode === "t")       b_t.classList.add("calculated");
   if (mode === "iso")     b_iso.classList.add("calculated");
   if (mode === "nd")      b_nd.classList.add("calculated");
@@ -127,45 +130,47 @@ function calculate(){
   // ---- T-STOP ----
   if (mode === "t"){
     const t = isoStops(isoB) + shutterStops(fpsB, angB) - ndB - EA;
+    const tRounded = Math.round(t);
 
-   const tRounded = Math.round(t);
+    if (tRounded < 0 || tRounded >= T_SCALE.length){
+      result.innerHTML = "⚠️ T-stop out of range";
+      return;
+    }
 
-if (tRounded < 0 || tRounded >= T_SCALE.length){
-  result.innerHTML = "⚠️ T-stop out of range";
-  return;
-}
-
-result.innerHTML =
-  `Set B T-Stop to <strong>${T_SCALE[tRounded]}</strong>
-   <br><small>(calculated: ${t.toFixed(2)} stops)</small>`;
-
-    result.innerHTML = `Set B T-Stop to <strong>${T_SCALE[t]}</strong>`;
+    result.innerHTML =
+      `Set B T-Stop to <strong>${T_SCALE[tRounded]}</strong>
+       <br><small>(calculated offset: ${t.toFixed(2)} stops)</small>`;
     return;
   }
 
   // ---- ISO ----
   if (mode === "iso"){
-    const iso = 800 * Math.pow(
-      2,
-      EA - shutterStops(fpsB, angB) + tB + ndB
+    const isoRaw =
+      800 * Math.pow(2, EA - shutterStops(fpsB, angB) + tB + ndB);
+
+    const isoFinal = nearestISO(
+      isoRaw,
+      CAMERA_ISO[camera_b.value].iso
     );
 
-    result.innerHTML = `Set B ISO to <strong>${Math.round(iso)}</strong>`;
+    result.innerHTML =
+      `Set B ISO to <strong>${isoFinal}</strong>
+       <br><small>(raw: ${Math.round(isoRaw)})</small>`;
     return;
   }
 
   // ---- ND ----
   if (mode === "nd"){
-    const nd = isoStops(isoB) + shutterStops(fpsB, angB) - tB - EA;
+    const ndStops = isoStops(isoB) + shutterStops(fpsB, angB) - tB - EA;
 
-    if (nd < 0){
+    if (ndStops < 0){
       result.innerHTML =
         "⚠️ Cannot solve with ND only<br>Open T-stop or raise ISO";
       return;
     }
 
     result.innerHTML =
-      `Set B ND to <strong>${(nd * ND_STEP).toFixed(1)}</strong>`;
+      `Set B ND to <strong>${(ndStops * ND_STEP).toFixed(1)}</strong>`;
     return;
   }
 
