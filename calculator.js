@@ -67,13 +67,31 @@ function populateND(select, cam){
 
   if (CAMERA_DATA[cam].nd.type === "fixed"){
     values = CAMERA_DATA[cam].nd.values;
-  } else {
-    for (let v=0.6; v<=2.1+0.0001; v+=0.05){
+  } 
+  else if (CAMERA_DATA[cam].nd.type === "eterna") {
+
+    // Clear + 0.3
+    values.push(0);
+    values.push(0.3);
+
+    // Internal ND: 0.6 → 2.1 in 0.05 steps
+    for (let v = 0.6; v <= 2.1 + 0.0001; v += 0.05){
       values.push(Number(v.toFixed(2)));
     }
-    values.unshift(0);
+
+    // Physical ND continuation
     values.push(2.4);
   }
+
+  values.forEach(v=>{
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = v === 0 ? "Clear" : v.toFixed(2);
+    select.appendChild(o);
+  });
+
+  select.value = 0;
+}
 
   values.forEach(v=>{
     const o=document.createElement("option");
