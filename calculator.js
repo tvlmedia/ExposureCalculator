@@ -108,30 +108,28 @@ function getT(side){
 function updateModeUI(){
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  const all = [b_iso, b_nd, b_shutter, b_fps, b_t];
-  all.forEach(el=>{
+  // reset alles
+  [b_iso, b_nd, b_shutter, b_fps].forEach(el=>{
     el.disabled = false;
     el.classList.remove("calculated");
   });
 
-  // reset T custom input
-  b_t_custom.style.display = (b_t.value === "custom") ? "block" : "none";
+  resetTStop();
 
-  // only lock the actual calculated field
+  // lock ONLY the calculated field
   if (mode === "iso") lockField(b_iso);
   if (mode === "nd") lockField(b_nd);
   if (mode === "shutter") lockField(b_shutter);
   if (mode === "fps") lockField(b_fps);
+
   if (mode === "t"){
-    lockField(b_t);
+    b_t.disabled = true;
+    b_t.classList.add("calculated");
+    b_t.innerHTML = `<option>— calculated —</option>`;
     b_t_custom.style.display = "none";
   }
-}
 
-function lockField(select){
-  select.disabled = true;
-  select.classList.add("calculated");
-  select.innerHTML = `<option>— calculated —</option>`;
+  result.innerHTML = "Result will appear here…";
 }
 
 /* =========================
