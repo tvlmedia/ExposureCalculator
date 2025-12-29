@@ -8,7 +8,7 @@ const CAMERA_DATA = {
   arri: {
     iso: [160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],
     native: [800],
-    nd: { values: [0,0.3,0.6,0.9,1.2,1.5] }
+    nd: { values: [0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4] }
   },
 
   venice: {
@@ -18,7 +18,7 @@ const CAMERA_DATA = {
       2500,3200,4000,5000,6400,8000,10000
     ],
     native: [500,2500],
-    nd: { values: [0,0.3,0.6,0.9,1.2,1.5] }
+    nd: { values: [0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4] }
   },
 
   eterna: {
@@ -52,22 +52,12 @@ const REF_SHUTTER = 1 / 50;
    PHYSICS
 ========================= */
 
-function isoStops(iso){
-  return Math.log2(iso / 800);
-}
-
-function shutterSpeed(fps, angle){
-  return (angle / 360) * (1 / fps);
-}
-
+function isoStops(iso){ return Math.log2(iso / 800); }
+function shutterSpeed(fps, angle){ return (angle / 360) * (1 / fps); }
 function shutterStops(fps, angle){
   return Math.log2(shutterSpeed(fps, angle) / REF_SHUTTER);
 }
-
-function tStops(t){
-  return -2 * Math.log2(t / REF_T);
-}
-
+function tStops(t){ return -2 * Math.log2(t / REF_T); }
 function exposure(fps, angle, iso, t, nd){
   return isoStops(iso) + shutterStops(fps, angle) + tStops(t) - nd;
 }
@@ -96,7 +86,7 @@ function populateND(select, cam){
 }
 
 /* =========================
-   T-STOP HANDLING
+   T-STOP
 ========================= */
 
 function getTValue(sel, input){
@@ -111,30 +101,55 @@ function toggleCustomT(side){
 }
 
 /* =========================
-   UI LOCKING
+   CALCULATED FIELD UX
+========================= */
+
+const storedValues = new Map();
+
+function setCalculated(select){
+  if (!storedValues.has(select)) {
+    storedValues.set(select, select.value);
+  }
+
+  select.innerHTML = "";
+  const opt = document.createElement("option");
+  opt.textContent = "— calculated —";
+  opt.value = "";
+  select.appendChild(opt);
+
+  select.disabled = true;
+  select.classList.add("calculated");
+}
+
+function restoreSelect(select){
+  if (!storedValues.has(select)) return;
+
+  const old = storedValues.get(select);
+  storedValues.delete(select);
+
+  // repopulate
+  if (select === b_iso) populateISO(select, camera_b.value);
+  if (select === b_nd)  populateND(select, camera_b.value);
+
+  select.value = old;
+  select.disabled = false;
+  select.classList.remove("calculated");
+}
+
+/* =========================
+   UI MODE SWITCH
 ========================= */
 
 function updateUI(){
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  const lockMap = {
-    t: b_t,
-    iso: b_iso,
-    nd: b_nd,
-    shutter: b_shutter,
-    fps: b_fps
-  };
+  [b_t,b_iso,b_nd,b_shutter,b_fps].forEach(restoreSelect);
 
-  [b_t,b_iso,b_nd,b_shutter,b_fps].forEach(el=>{
-    el.disabled = false;
-    el.classList.remove("calculated");
-  });
-
-  const target = lockMap[mode];
-  if (target){
-    target.disabled = true;
-    target.classList.add("calculated");
-  }
+  if (mode === "t") setCalculated(b_t);
+  if (mode === "iso") setCalculated(b_iso);
+  if (mode === "nd") setCalculated(b_nd);
+  if (mode === "shutter") setCalculated(b_shutter);
+  if (mode === "fps") setCalculated(b_fps);
 
   result.innerHTML = "Result will appear here…";
 }
@@ -160,23 +175,19 @@ function calculate(){
     const target = EA - isoStops(isoB) - shutterStops(fpsB,angB) + ndB;
     const t = REF_T * Math.pow(2,-target/2);
     result.innerHTML = `Set B T-Stop to <strong>T${t.toFixed(2)}</strong>`;
-    return;
   }
 
   if (mode === "iso"){
     const iso = 800 * Math.pow(2, EA - shutterStops(fpsB,angB) - tStops(tB) + ndB);
     result.innerHTML = `Set B ISO to <strong>${Math.round(iso)}</strong>`;
-    return;
   }
 
   if (mode === "nd"){
     const nd = isoStops(isoB) + shutterStops(fpsB,angB) + tStops(tB) - EA;
     if (nd < 0){ result.innerHTML="⚠️ Cannot solve with ND only"; return; }
-
     const list = CAMERA_DATA[camera_b.value].nd.values;
     const closest = list.reduce((a,b)=>Math.abs(b-nd)<Math.abs(a-nd)?b:a);
     result.innerHTML = `Set B ND to <strong>${closest.toFixed(2)}</strong>`;
-    return;
   }
 
   if (mode === "shutter"){
@@ -184,10 +195,8 @@ function calculate(){
     for (let a of [360,180,90,45]){
       if (Math.abs(shutterStops(fpsB,a)-target)<0.01){
         result.innerHTML = `Set B Shutter Angle to <strong>${a}°</strong>`;
-        return;
       }
     }
-    result.innerHTML="⚠️ No valid shutter angle";
   }
 
   if (mode === "fps"){
@@ -195,10 +204,8 @@ function calculate(){
       const e = isoStops(isoB)+shutterStops(f,angB)+tStops(tB)-ndB;
       if (Math.abs(e-EA)<0.01){
         result.innerHTML = `Set B Frame Rate to <strong>${f} fps</strong>`;
-        return;
       }
     }
-    result.innerHTML="⚠️ No valid FPS solution";
   }
 }
 
