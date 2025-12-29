@@ -143,13 +143,27 @@ function restoreSelect(select){
 function updateUI(){
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  [b_t,b_iso,b_nd,b_shutter,b_fps].forEach(restoreSelect);
+  // herstel alles eerst
+  [b_t, b_iso, b_nd, b_shutter, b_fps].forEach(restoreSelect);
 
-  if (mode === "t") setCalculated(b_t);
-  if (mode === "iso") setCalculated(b_iso);
-  if (mode === "nd") setCalculated(b_nd);
-  if (mode === "shutter") setCalculated(b_shutter);
-  if (mode === "fps") setCalculated(b_fps);
+  // lock exact 1 veld — nooit meer
+  switch (mode){
+    case "t":
+      setCalculated(b_t);
+      break;
+    case "iso":
+      setCalculated(b_iso);
+      break;
+    case "nd":
+      setCalculated(b_nd);
+      break;
+    case "shutter":
+      setCalculated(b_shutter);
+      break;
+    case "fps":
+      setCalculated(b_fps);
+      break;
+  }
 
   result.innerHTML = "Result will appear here…";
 }
