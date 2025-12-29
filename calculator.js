@@ -39,10 +39,17 @@ document.querySelectorAll("input[name='calc']")
 function updateUI(){
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  // reset all to calculated placeholder
+  // alles resetten
   [b_t, b_iso, b_nd, b_shutter, b_fps].forEach(el => {
-    el.value = "";
+    el.classList.remove("calculated");
   });
+
+  // exact 1 target greyed-out
+  if (mode === "t")       b_t.classList.add("calculated");
+  if (mode === "iso")     b_iso.classList.add("calculated");
+  if (mode === "nd")      b_nd.classList.add("calculated");
+  if (mode === "shutter") b_shutter.classList.add("calculated");
+  if (mode === "fps")     b_fps.classList.add("calculated");
 
   result.innerHTML = "Result will appear here…";
 }
