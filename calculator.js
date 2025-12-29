@@ -166,12 +166,32 @@ function calculate(){
     return;
   }
 
-  if (mode === "nd"){
-    const nd = isoStops(isoB) + shutterStops(fpsB, angB) + tStops(tB) - EA;
-    result.innerHTML = `Set B ND to <strong>${nd.toFixed(2)}</strong>`;
+  if (mode === "nd") {
+
+  const ndStopsNeeded =
+    isoStops(isoB) +
+    shutterStops(fpsB, angB) +
+    tStops(tB) -
+    EA;
+
+  // ND can never be negative
+  if (ndStopsNeeded <= 0) {
+    result.innerHTML =
+      "⚠️ ND cannot be negative.<br>" +
+      "<small>Camera B is already darker than A — adjust ISO, T-Stop or Shutter instead.</small>";
     return;
   }
 
+  const ndProfile = CAMERA_DATA[camB].nd;
+
+  const roundedND =
+    Math.round(ndStopsNeeded / ndProfile.step) * ndProfile.step;
+
+  result.innerHTML =
+    `Set B ND to <strong>${roundedND.toFixed(2)}</strong>
+     <br><small>(${ndStopsNeeded.toFixed(2)} stops)</small>`;
+  return;
+}
   if (mode === "shutter"){
     for (let a of [360,180,90,45]){
       if (Math.abs(shutterStops(fpsB,a)-(EA-isoStops(isoB)-tStops(tB)+ndB))<0.01){
