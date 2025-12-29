@@ -4,25 +4,32 @@
    CAMERA DATA
 ========================= */
 
-const CAMERA_ISO = {
+const CAMERA_DATA = {
   arri: {
-    iso: [160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200]
+    iso: [160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],
+    native: [800],
+    nd: { start: 0.0, step: 0.3 }
   },
+
   venice: {
     iso: [
       125,160,200,250,320,400,500,
       640,800,1000,1250,1600,2000,
       2500,3200,4000,5000,6400,8000,10000
     ],
-    native: [500, 2500]
+    native: [500, 2500],
+    nd: { start: 0.0, step: 0.3 }
   },
+
   eterna: {
+    // voorlopig Venice-achtig ISO, zoals afgesproken
     iso: [
       125,160,200,250,320,400,500,
       640,800,1000,1250,1600,2000,
-      2500,3200,4000,5000,6400,8000
+      2500,3200,4000,5000,6400,8000,10000
     ],
-    native: [800, 3200]
+    native: [800, 3200],
+    nd: { start: 0.6, step: 0.05 }
   }
 };
 
@@ -30,12 +37,11 @@ const CAMERA_ISO = {
    CONSTANTS
 ========================= */
 
-const ND_STEP = 0.3;
-const REF_T = 2.8;            // T2.8 = 0.00 stop
-const REF_SHUTTER = 1 / 50;   // 25fps @ 180°
+const REF_T = 2.8;          // T2.8 = 0.00 stop
+const REF_SHUTTER = 1 / 50; // 25fps @ 180°
 
 /* =========================
-   CORE PHYSICS (CORRECT)
+   PHYSICS (CORRECT)
 ========================= */
 
 function isoStops(iso){
@@ -50,7 +56,7 @@ function shutterStops(fps, angle){
   return Math.log2(shutterSpeed(fps, angle) / REF_SHUTTER);
 }
 
-// Physically correct T-stop math
+// Physically correct T-stop → stops
 function tStops(t){
   return -2 * Math.log2(t / REF_T);
 }
@@ -69,8 +75,8 @@ function exposure(fps, angle, iso, t, ndStops){
 ========================= */
 
 function populateISO(selectEl, cameraKey){
-  const values = CAMERA_ISO[cameraKey].iso;
-  const prev = +selectEl.dataset.prev || +selectEl.value;
+  const values = CAMERA_DATA[cameraKey].iso;
+  const prev = +selectEl.value;
 
   selectEl.innerHTML = "";
 
@@ -85,7 +91,7 @@ function populateISO(selectEl, cameraKey){
 }
 
 /* =========================
-   UI HELPERS
+   T-STOP UI
 ========================= */
 
 function getTValue(selectEl, inputEl){
@@ -99,53 +105,12 @@ function toggleCustomT(side){
   const select = document.getElementById(`${side}_t`);
   const input  = document.getElementById(`${side}_t_custom`);
 
-  input.style.display = (select.value === "custom") ? "block" : "none";
-  if (select.value === "custom") input.focus();
-}
-
-/* =========================
-   CALCULATED UI HANDLING
-========================= */
-
-function setCalculated(selectEl){
-  if (!selectEl.dataset.prev){
-    selectEl.dataset.prev = selectEl.value;
+  if (select.value === "custom"){
+    input.style.display = "block";
+    input.focus();
+  } else {
+    input.style.display = "none";
   }
-  selectEl.innerHTML = `<option value="">— calculated —</option>`;
-  selectEl.value = "";
-  selectEl.classList.add("calculated");
-}
-
-function restoreSelect(selectEl){
-  if (selectEl.dataset.prev){
-    selectEl.value = selectEl.dataset.prev;
-    delete selectEl.dataset.prev;
-  }
-  selectEl.classList.remove("calculated");
-}
-
-/* =========================
-   MODE UI
-========================= */
-
-document.querySelectorAll("input[name='calc']")
-  .forEach(r => r.addEventListener("change", updateUI));
-
-function updateUI(){
-  const mode = document.querySelector("input[name='calc']:checked").value;
-
-  const map = {
-    t: b_t,
-    iso: b_iso,
-    nd: b_nd,
-    shutter: b_shutter,
-    fps: b_fps
-  };
-
-  Object.values(map).forEach(el => restoreSelect(el));
-  setCalculated(map[mode]);
-
-  result.innerHTML = "Result will appear here…";
 }
 
 /* =========================
@@ -155,6 +120,9 @@ function updateUI(){
 function calculate(){
 
   const mode = document.querySelector("input[name='calc']:checked").value;
+
+  const camB = camera_b.value;
+  const ndProfile = CAMERA_DATA[camB].nd;
 
   // ---- A ----
   const tA = getTValue(a_t, a_t_custom);
@@ -169,26 +137,29 @@ function calculate(){
 
   // ---- B ----
   const tB = getTValue(b_t, b_t_custom);
-
   const fpsB = +b_fps.value;
   const angB = +b_shutter.value;
   const isoB = +b_iso.value;
   const ndB  = +b_nd.value;
 
+  /* =====================
+     MODES
+  ===================== */
+
   // ---- T-STOP ----
   if (mode === "t"){
-    const target =
+    const targetStops =
       EA -
       isoStops(isoB) -
       shutterStops(fpsB, angB) +
       ndB;
 
     const tSolved =
-      REF_T * Math.pow(2, -target / 2);
+      REF_T * Math.pow(2, -targetStops / 2);
 
     result.innerHTML =
       `Set B T-Stop to <strong>T${tSolved.toFixed(2)}</strong>
-       <br><small>(offset: ${target.toFixed(2)} stops)</small>`;
+       <br><small>(offset: ${targetStops.toFixed(2)} stops)</small>`;
     return;
   }
 
@@ -221,8 +192,14 @@ function calculate(){
       return;
     }
 
+    // Camera-aware ND rounding
+    const rawND = ndProfile.start + ndStops;
+    const roundedND =
+      Math.round(rawND / ndProfile.step) * ndProfile.step;
+
     result.innerHTML =
-      `Set B ND to <strong>${(ndStops * ND_STEP).toFixed(2)}</strong>`;
+      `Set B ND to <strong>${roundedND.toFixed(2)}</strong>
+       <br><small>(${ndStops.toFixed(2)} stops)</small>`;
     return;
   }
 
@@ -272,4 +249,3 @@ function calculate(){
 
 populateISO(a_iso, camera_a.value);
 populateISO(b_iso, camera_b.value);
-updateUI();
