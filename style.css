@@ -91,3 +91,14 @@ button{
   font-family: ui-monospace, monospace;
   opacity:.95;
 }
+
+select .dash{
+  color:#777;
+  font-style:italic;
+}
+
+select.is-target{
+  border-color:#555;
+  background:#0d0d0d;
+}
+
