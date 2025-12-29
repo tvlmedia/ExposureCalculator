@@ -7,8 +7,7 @@
 const CAMERA_DATA = {
   arri: {
     iso: [160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],
-    native: [800],
-    nd: { values: [0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4] }
+    nd: { type: "fixed", values: [0,0.3,0.6,0.9,1.2,1.5] }
   },
 
   venice: {
@@ -17,8 +16,7 @@ const CAMERA_DATA = {
       640,800,1000,1250,1600,2000,
       2500,3200,4000,5000,6400,8000,10000
     ],
-    native: [500,2500],
-    nd: { values: [0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4] }
+    nd: { type: "fixed", values: [0,0.3,0.6,0.9,1.2,1.5] }
   },
 
   eterna: {
@@ -27,17 +25,7 @@ const CAMERA_DATA = {
       640,800,1000,1250,1600,2000,
       2500,3200,4000,5000,6400,8000,10000
     ],
-    native: [800,3200],
-    nd: {
-      values: (() => {
-        const arr = [];
-        for (let v = 0.6; v <= 2.1 + 0.0001; v += 0.05) {
-          arr.push(+v.toFixed(2));
-        }
-        arr.push(2.4); // fysieke ND
-        return arr;
-      })()
-    }
+    nd: { type: "eterna" } // speciaal
   }
 };
 
@@ -52,12 +40,22 @@ const REF_SHUTTER = 1 / 50;
    PHYSICS
 ========================= */
 
-function isoStops(iso){ return Math.log2(iso / 800); }
-function shutterSpeed(fps, angle){ return (angle / 360) * (1 / fps); }
+function isoStops(iso){
+  return Math.log2(iso / 800);
+}
+
+function shutterSpeed(fps, angle){
+  return (angle / 360) * (1 / fps);
+}
+
 function shutterStops(fps, angle){
   return Math.log2(shutterSpeed(fps, angle) / REF_SHUTTER);
 }
-function tStops(t){ return -2 * Math.log2(t / REF_T); }
+
+function tStops(t){
+  return -2 * Math.log2(t / REF_T);
+}
+
 function exposure(fps, angle, iso, t, nd){
   return isoStops(iso) + shutterStops(fps, angle) + tStops(t) - nd;
 }
@@ -73,99 +71,79 @@ function populateISO(select, cam){
     o.value=v; o.textContent=v;
     select.appendChild(o);
   });
+  select.value = CAMERA_DATA[cam].iso[0];
 }
 
 function populateND(select, cam){
   select.innerHTML = "";
-  CAMERA_DATA[cam].nd.values.forEach(v=>{
+  const nd = CAMERA_DATA[cam].nd;
+
+  let values = [];
+
+  if (nd.type === "fixed"){
+    values = nd.values;
+  } else {
+    // ETERNA: 0.6 → 2.1 in 0.05 + 2.4
+    for (let v=0.6; v<=2.1+0.0001; v+=0.05){
+      values.push(Number(v.toFixed(2)));
+    }
+    values.unshift(0);
+    values.push(2.4);
+  }
+
+  values.forEach(v=>{
     const o=document.createElement("option");
     o.value=v;
     o.textContent = v===0 ? "Clear" : v.toFixed(2);
     select.appendChild(o);
   });
+
+  select.value = 0;
 }
 
 /* =========================
-   T-STOP
+   T CUSTOM
 ========================= */
-
-function getTValue(sel, input){
-  return sel.value === "custom" ? parseFloat(input.value) : parseFloat(sel.value);
-}
 
 function toggleCustomT(side){
   const sel = document.getElementById(`${side}_t`);
   const inp = document.getElementById(`${side}_t_custom`);
   inp.style.display = sel.value === "custom" ? "block" : "none";
-  if (sel.value === "custom") inp.focus();
+}
+
+function getT(side){
+  const sel = document.getElementById(`${side}_t`);
+  const inp = document.getElementById(`${side}_t_custom`);
+  return sel.value === "custom" ? parseFloat(inp.value) : parseFloat(sel.value);
 }
 
 /* =========================
-   CALCULATED FIELD UX
+   UI MODE HANDLING
 ========================= */
 
-const storedValues = new Map();
+const MODES = ["t","iso","nd","shutter","fps"];
 
-function setCalculated(select){
-  if (!storedValues.has(select)) {
-    storedValues.set(select, select.value);
-  }
-
-  select.innerHTML = "";
-  const opt = document.createElement("option");
-  opt.textContent = "— calculated —";
-  opt.value = "";
-  select.appendChild(opt);
-
-  select.disabled = true;
-  select.classList.add("calculated");
-}
-
-function restoreSelect(select){
-  if (!storedValues.has(select)) return;
-
-  const old = storedValues.get(select);
-  storedValues.delete(select);
-
-  // repopulate
-  if (select === b_iso) populateISO(select, camera_b.value);
-  if (select === b_nd)  populateND(select, camera_b.value);
-
-  select.value = old;
-  select.disabled = false;
-  select.classList.remove("calculated");
-}
-
-/* =========================
-   UI MODE SWITCH
-========================= */
-
-function updateUI(){
+function updateModeUI(){
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  // herstel alles eerst
-  [b_t, b_iso, b_nd, b_shutter, b_fps].forEach(restoreSelect);
+  const map = {
+    t: b_t,
+    iso: b_iso,
+    nd: b_nd,
+    shutter: b_shutter,
+    fps: b_fps
+  };
 
-  // lock exact 1 veld — nooit meer
-  switch (mode){
-    case "t":
-      setCalculated(b_t);
-      break;
-    case "iso":
-      setCalculated(b_iso);
-      break;
-    case "nd":
-      setCalculated(b_nd);
-      break;
-    case "shutter":
-      setCalculated(b_shutter);
-      break;
-    case "fps":
-      setCalculated(b_fps);
-      break;
-  }
+  Object.values(map).forEach(el=>{
+    el.disabled = false;
+    el.classList.remove("calculated");
+  });
 
-  result.innerHTML = "Result will appear here…";
+  const target = map[mode];
+  target.disabled = true;
+  target.classList.add("calculated");
+
+  target.innerHTML = `<option>— calculated —</option>`;
 }
 
 /* =========================
@@ -176,50 +154,57 @@ function calculate(){
 
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  const tA = getTValue(a_t,a_t_custom);
-  const EA = exposure(+a_fps.value,+a_shutter.value,+a_iso.value,tA,+a_nd.value);
+  const EA = exposure(
+    +a_fps.value,
+    +a_shutter.value,
+    +a_iso.value,
+    getT("a"),
+    +a_nd.value
+  );
 
-  const tB = getTValue(b_t,b_t_custom);
   const fpsB = +b_fps.value;
   const angB = +b_shutter.value;
   const isoB = +b_iso.value;
+  const tB   = getT("b");
   const ndB  = +b_nd.value;
 
   if (mode === "t"){
-    const target = EA - isoStops(isoB) - shutterStops(fpsB,angB) + ndB;
-    const t = REF_T * Math.pow(2,-target/2);
+    const s = EA - isoStops(isoB) - shutterStops(fpsB, angB) + ndB;
+    const t = REF_T * Math.pow(2, -s/2);
     result.innerHTML = `Set B T-Stop to <strong>T${t.toFixed(2)}</strong>`;
+    return;
   }
 
   if (mode === "iso"){
-    const iso = 800 * Math.pow(2, EA - shutterStops(fpsB,angB) - tStops(tB) + ndB);
+    const iso = 800 * Math.pow(2, EA - shutterStops(fpsB, angB) - tStops(tB) + ndB);
     result.innerHTML = `Set B ISO to <strong>${Math.round(iso)}</strong>`;
+    return;
   }
 
   if (mode === "nd"){
-    const nd = isoStops(isoB) + shutterStops(fpsB,angB) + tStops(tB) - EA;
-    if (nd < 0){ result.innerHTML="⚠️ Cannot solve with ND only"; return; }
-    const list = CAMERA_DATA[camera_b.value].nd.values;
-    const closest = list.reduce((a,b)=>Math.abs(b-nd)<Math.abs(a-nd)?b:a);
-    result.innerHTML = `Set B ND to <strong>${closest.toFixed(2)}</strong>`;
+    const nd = isoStops(isoB) + shutterStops(fpsB, angB) + tStops(tB) - EA;
+    result.innerHTML = `Set B ND to <strong>${nd.toFixed(2)}</strong>`;
+    return;
   }
 
   if (mode === "shutter"){
-    const target = EA - isoStops(isoB) - tStops(tB) + ndB;
     for (let a of [360,180,90,45]){
-      if (Math.abs(shutterStops(fpsB,a)-target)<0.01){
-        result.innerHTML = `Set B Shutter Angle to <strong>${a}°</strong>`;
+      if (Math.abs(shutterStops(fpsB,a)-(EA-isoStops(isoB)-tStops(tB)+ndB))<0.01){
+        result.innerHTML = `Set B Shutter to <strong>${a}°</strong>`;
+        return;
       }
     }
+    result.innerHTML="⚠️ No solution";
   }
 
   if (mode === "fps"){
     for (let f of [25,50]){
-      const e = isoStops(isoB)+shutterStops(f,angB)+tStops(tB)-ndB;
-      if (Math.abs(e-EA)<0.01){
-        result.innerHTML = `Set B Frame Rate to <strong>${f} fps</strong>`;
+      if (Math.abs(exposure(f,angB,isoB,tB,ndB)-EA)<0.01){
+        result.innerHTML = `Set B FPS to <strong>${f}</strong>`;
+        return;
       }
     }
+    result.innerHTML="⚠️ No solution";
   }
 }
 
@@ -230,10 +215,10 @@ function calculate(){
 camera_a.onchange = ()=>{ populateISO(a_iso,camera_a.value); populateND(a_nd,camera_a.value); };
 camera_b.onchange = ()=>{ populateISO(b_iso,camera_b.value); populateND(b_nd,camera_b.value); };
 
-document.querySelectorAll("input[name='calc']").forEach(r=>r.onchange=updateUI);
+document.querySelectorAll("input[name='calc']").forEach(r=>r.onchange=updateModeUI);
 
 populateISO(a_iso,camera_a.value);
 populateISO(b_iso,camera_b.value);
 populateND(a_nd,camera_a.value);
 populateND(b_nd,camera_b.value);
-updateUI();
+updateModeUI();
