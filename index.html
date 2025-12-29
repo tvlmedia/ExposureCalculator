@@ -5,84 +5,18 @@
 <title>Exposure Calculator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{
-  background:#0b0b0b;
-  color:#fff;
-  font-family: system-ui, sans-serif;
-  padding:30px;
-}
-h1{
-  text-align:center;
-  font-size:18px;
-  margin-bottom:30px;
-  opacity:.9;
-}
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:30px;
-  max-width:1200px;
-  margin:auto;
-}
-.card{
-  background:#111;
-  padding:22px;
-  border-radius:16px;
-}
-h2{
-  font-size:14px;
-  opacity:.7;
-  margin-bottom:14px;
-}
-label{
-  font-size:12px;
-  opacity:.6;
-  margin-top:12px;
-  display:block;
-}
-input, select{
-  width:100%;
-  padding:10px;
-  background:#0b0b0b;
-  border:1px solid #333;
-  color:#fff;
-  border-radius:10px;
-  font-size:14px;
-}
-.row{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-}
-.calc-block{
-  margin-top:20px;
-  padding-top:10px;
-  border-top:1px solid #222;
-}
-button{
-  display:block;
-  margin:30px auto 20px;
-  padding:12px 36px;
-  border-radius:999px;
-  border:none;
-  background:#fff;
-  color:#000;
-  font-size:14px;
-  cursor:pointer;
-}
-.result{
-  max-width:760px;
-  margin:0 auto;
-  background:#111;
-  border-radius:16px;
-  padding:20px;
-  font-family: ui-monospace, monospace;
-  line-height:1.6;
-}
-.result strong{
-  display:block;
-  margin-bottom:6px;
-}
+body{background:#0b0b0b;color:#fff;font-family:system-ui,sans-serif;padding:30px}
+h1{text-align:center;font-size:18px;margin-bottom:30px;opacity:.9}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;max-width:1200px;margin:auto}
+.card{background:#111;padding:22px;border-radius:16px}
+h2{font-size:14px;opacity:.7;margin-bottom:14px}
+label{font-size:12px;opacity:.6;margin-top:12px;display:block}
+input,select{width:100%;padding:10px;background:#0b0b0b;border:1px solid #333;color:#fff;border-radius:10px;font-size:14px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.calc-block{margin-top:20px;padding-top:10px;border-top:1px solid #222}
+button{display:block;margin:30px auto 20px;padding:12px 36px;border-radius:999px;border:none;background:#fff;color:#000;font-size:14px;cursor:pointer}
+.result{max-width:760px;margin:0 auto;background:#111;border-radius:16px;padding:20px;font-family:ui-monospace,monospace;line-height:1.6}
+.result strong{display:block;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -135,7 +69,7 @@ button{
 </div>
 
 <label>T-Stop</label>
-<input id="r_t" type="number" step="0.01" value="3.6">
+<input id="r_t" type="number" step="0.01" value="2.0">
 
 <label>ISO</label>
 <select id="r_iso"></select>
@@ -158,119 +92,113 @@ button{
 </div>
 
 <button onclick="calculate()">CALCULATE</button>
-
 <div class="result" id="result"></div>
 
 <script>
-/* CAMERA PRESETS */
-const CAMS = {
-  alexa: {
-    name: "ARRI Alexa Mini LF",
-    iso: [160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],
-    defaultISO: 800
-  },
-  venice: {
-    name: "Sony VENICE",
-    iso: [125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,4000,5000,6400,8000,10000],
-    defaultISO: 500
-  }
+// ---------- CAMERA PRESETS ----------
+const CAMS={
+  alexa:{name:"ARRI Alexa Mini LF",iso:[160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],defaultISO:800},
+  venice:{name:"Sony VENICE",iso:[125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,4000,5000,6400,8000,10000],defaultISO:500}
+};
+const ND_STEPS=[0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,2.7,3.0];
+
+// ---------- HELPERS ----------
+const log2=x=>Math.log(x)/Math.log(2);
+const shutterTime=(a,f)=>(a/360)*(1/f);
+const nearest=(v,arr)=>arr.reduce((a,b)=>Math.abs(b-v)<Math.abs(a-v)?b:a);
+const neighbors=(v,arr)=>{
+  const s=[...arr].sort((a,b)=>a-b);
+  let lo=s[0],hi=s[s.length-1];
+  for(const x of s){ if(x<=v) lo=x; if(x>=v){hi=x;break;} }
+  return [lo,hi];
 };
 
-const ND_STEPS = [0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,2.7,3.0];
-
-const log2 = x => Math.log(x)/Math.log(2);
-const shutterTime = (a,f)=>(a/360)*(1/f);
-
-function exposure(t,iso,nd,sh,fps){
-  return log2(iso * shutterTime(sh,fps) / (t*t) / Math.pow(2,nd));
-}
-
-function nearest(val, arr){
-  return arr.reduce((a,b)=>Math.abs(b-val)<Math.abs(a-val)?b:a);
-}
-
-/* INIT CAM SELECTORS */
-function initCams(){
-  [l_cam, r_cam].forEach(sel=>{
+// ---------- INIT ----------
+function fillCams(){
+  [l_cam,r_cam].forEach(sel=>{
     sel.innerHTML="";
     Object.keys(CAMS).forEach(k=>{
       const o=document.createElement("option");
-      o.value=k;
-      o.text=CAMS[k].name;
-      sel.appendChild(o);
+      o.value=k;o.text=CAMS[k].name;sel.appendChild(o);
     });
   });
-  l_cam.value="alexa";
-  r_cam.value="venice";
-  updateISO(l_cam, l_iso);
-  updateISO(r_cam, r_iso);
+  l_cam.value="alexa"; r_cam.value="alexa";
+  fillISO(l_cam,l_iso); fillISO(r_cam,r_iso);
 }
-
-function updateISO(camSel, isoSel){
+function fillISO(camSel,isoSel){
   const cam=CAMS[camSel.value];
   isoSel.innerHTML="";
-  cam.iso.forEach(v=>{
-    const o=document.createElement("option");
-    o.value=v;
-    o.text=v;
-    isoSel.appendChild(o);
-  });
+  cam.iso.forEach(v=>{const o=document.createElement("option");o.value=v;o.text=v;isoSel.appendChild(o);});
   isoSel.value=cam.defaultISO;
 }
+l_cam.onchange=()=>fillISO(l_cam,l_iso);
+r_cam.onchange=()=>fillISO(r_cam,r_iso);
+fillCams();
 
-l_cam.onchange=()=>updateISO(l_cam,l_iso);
-r_cam.onchange=()=>updateISO(r_cam,r_iso);
-
-initCams();
-
-/* CALCULATION */
+// ---------- CALC ----------
 function calculate(){
-  const base = exposure(+l_t.value,+l_iso.value,+l_nd.value,+l_sh.value,+l_fps.value);
-  const mode = document.querySelector("input[name=calc]:checked").value;
+  const mode=document.querySelector("input[name=calc]:checked").value;
   let out="";
 
   if(mode==="nd"){
-    const exact = log2((+r_iso.value*shutterTime(+r_sh.value,+r_fps.value))/(Math.pow(+r_t.value,2)*Math.pow(2,base)));
-    const nd = Math.max(0, nearest(exact, ND_STEPS));
-    const remaining = exact - nd;
+    // RELATIVE STOPS (CORRECT)
+    const tStops = 2*log2(+l_t.value / +r_t.value);
+    const isoStops = log2(+r_iso.value / +l_iso.value);
+    const shStops = log2(
+      shutterTime(+r_sh.value,+r_fps.value) /
+      shutterTime(+l_sh.value,+l_fps.value)
+    );
+    const exactND = tStops + isoStops + shStops - +l_nd.value;
 
-    out+=`<strong>Set ND to:</strong> ${nd.toFixed(1)}<br><br>`;
+    const ndSet = Math.max(0, nearest(exactND, ND_STEPS));
+    const remaining = exactND - ndSet;
 
-    if(Math.abs(remaining)>0.01){
-      const cam=CAMS[r_cam.value];
-      const isoExact = +r_iso.value * Math.pow(2, remaining);
-      const isoRounded = nearest(isoExact, cam.iso);
-      const tNew = +r_t.value / Math.sqrt(Math.pow(2, remaining));
+    out+=`<strong>Set camera ND to:</strong> ${ndSet.toFixed(1)}<br>`;
+    out+=`Exact ND needed: ${exactND.toFixed(2)} stops<br><br>`;
 
-      out+=`<strong>Remaining difference:</strong> ${remaining>0?"+":""}${remaining.toFixed(2)} stop<br><br>`;
-      out+=`Compensate with:<br>`;
-      out+=`• ISO: ${r_iso.value} → ${isoRounded}<br>`;
-      out+=`• or T-Stop: T${r_t.value} → T${tNew.toFixed(2)}`;
-    } else {
+    if(Math.abs(remaining)<0.01){
       out+=`No further compensation needed.`;
+      result.innerHTML=out; return;
     }
+
+    out+=`<strong>Remaining difference:</strong> ${remaining>0?"+":""}${remaining.toFixed(2)} stop<br><br>`;
+
+    const cam=CAMS[r_cam.value];
+    const isoExact = +r_iso.value * Math.pow(2, remaining);
+    const [isoLo,isoHi]=neighbors(isoExact, cam.iso);
+    const tNew = +r_t.value / Math.sqrt(Math.pow(2, remaining));
+
+    out+=`Compensate with:<br>`;
+    out+=`• ISO option A: ${r_iso.value} → ${isoLo}<br>`;
+    out+=`• ISO option B: ${r_iso.value} → ${isoHi}<br>`;
+    out+=`• or T-Stop: T${r_t.value} → T${tNew.toFixed(2)} (exact)`;
+
+    result.innerHTML=out; return;
   }
 
   if(mode==="iso"){
-    const cam=CAMS[r_cam.value];
-    const isoExact = Math.pow(2,base)*Math.pow(+r_t.value,2)*Math.pow(2,+r_nd.value)/shutterTime(+r_sh.value,+r_fps.value);
-    const isoRounded = nearest(isoExact, cam.iso);
-    out=`<strong>Set ISO to:</strong> ${isoRounded}`;
+    const isoExact = Math.pow(2, 2*log2(+l_t.value/+r_t.value) - +l_nd.value)
+      * (+l_iso.value) * (shutterTime(+l_sh.value,+l_fps.value)/shutterTime(+r_sh.value,+r_fps.value));
+    const isoSet = nearest(isoExact, CAMS[r_cam.value].iso);
+    result.innerHTML=`<strong>Set ISO to:</strong> ${isoSet}`; return;
   }
 
   if(mode==="t"){
-    const v = Math.sqrt((+r_iso.value*shutterTime(+r_sh.value,+r_fps.value))/(Math.pow(2,+r_nd.value)*Math.pow(2,base)));
-    out=`<strong>Set T-Stop to:</strong> T${v.toFixed(2)}`;
+    const tNew = +l_t.value * Math.sqrt(
+      (shutterTime(+l_sh.value,+l_fps.value)/shutterTime(+r_sh.value,+r_fps.value)) *
+      (+l_iso.value/+r_iso.value) * Math.pow(2,+l_nd.value)
+    );
+    result.innerHTML=`<strong>Set T-Stop to:</strong> T${tNew.toFixed(2)}`; return;
   }
 
   if(mode==="sh"){
-    const v = (Math.pow(2,base)*Math.pow(+r_t.value,2)*Math.pow(2,+r_nd.value)/+r_iso.value)*360*+r_fps.value;
-    out=`<strong>Set Shutter Angle to:</strong> ${v.toFixed(1)}°`;
+    const shNew = +l_sh.value * (
+      (shutterTime(+r_sh.value,+r_fps.value)/shutterTime(+l_sh.value,+l_fps.value)) *
+      Math.pow(+r_t.value/+l_t.value,2) * (+r_iso.value/+l_iso.value) * Math.pow(2,-+l_nd.value)
+    );
+    result.innerHTML=`<strong>Set Shutter Angle to:</strong> ${shNew.toFixed(1)}°`; return;
   }
-
-  result.innerHTML=out;
 }
 </script>
-
 </body>
 </html>
