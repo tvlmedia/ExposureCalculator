@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Exposure Match Tool</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body {
+    background:#0b0b0b;
+    color:#fff;
+    font-family: system-ui, sans-serif;
+    padding:30px;
+  }
+  h1 {
+    font-size:18px;
+    opacity:.9;
+    margin-bottom:20px;
+  }
+  .grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:30px;
+    max-width:900px;
+    margin:auto;
+  }
+  .panel {
+    background:#111;
+    padding:20px;
+    border-radius:14px;
+  }
+  h2 {
+    font-size:14px;
+    opacity:.7;
+    margin-bottom:10px;
+  }
+  label {
+    font-size:12px;
+    opacity:.6;
+    margin-top:12px;
+    display:block;
+  }
+  input {
+    width:100%;
+    padding:9px;
+    background:#0b0b0b;
+    border:1px solid #333;
+    color:#fff;
+    border-radius:8px;
+    font-size:14px;
+  }
+  .result {
+    margin-top:20px;
+    font-family: ui-monospace, monospace;
+    opacity:.85;
+  }
+</style>
+</head>
+<body>
+
+<h1>Exposure Match Tool</h1>
+
+<div class="grid">
+
+  <!-- LEFT -->
+  <div class="panel">
+    <h2>Source exposure</h2>
+
+    <label>T-stop</label>
+    <input id="l_t" type="number" step="0.1" value="2.8">
+
+    <label>ISO</label>
+    <input id="l_iso" type="number" value="800">
+
+    <label>ND (stops)</label>
+    <input id="l_nd" type="number" step="0.1" value="0.3">
+
+    <label>Shutter angle (°)</label>
+    <input id="l_shutter" type="number" value="180">
+
+    <label>Frame rate</label>
+    <input id="l_fps" type="number" value="25">
+  </div>
+
+  <!-- RIGHT -->
+  <div class="panel">
+    <h2>Target exposure (leave ONE empty)</h2>
+
+    <label>T-stop</label>
+    <input id="r_t" type="number" step="0.1">
+
+    <label>ISO</label>
+    <input id="r_iso" type="number">
+
+    <label>ND (stops)</label>
+    <input id="r_nd" type="number" step="0.1">
+
+    <label>Shutter angle (°)</label>
+    <input id="r_shutter" type="number">
+
+    <label>Frame rate</label>
+    <input id="r_fps" type="number">
+
+    <div class="result" id="result"></div>
+  </div>
+
+</div>
+
+<script>
+function log2(x){ return Math.log(x)/Math.log(2); }
+
+function shutterTime(angle, fps){
+  return (angle / 360) * (1 / fps);
+}
+
+function exposure(t, iso, nd, angle, fps){
+  return Math.log2(
+    iso *
+    shutterTime(angle, fps) /
+    (t * t) /
+    Math.pow(2, nd)
+  );
+}
+
+function recalc(){
+  const l = {
+    t:+l_t.value,
+    iso:+l_iso.value,
+    nd:+l_nd.value,
+    sh:+l_shutter.value,
+    fps:+l_fps.value
+  };
+
+  const r = {
+    t:r_t.value,
+    iso:r_iso.value,
+    nd:r_nd.value,
+    sh:r_shutter.value,
+    fps:r_fps.value
+  };
+
+  const empty = Object.keys(r).filter(k => r[k]==="");
+  if(empty.length !== 1){
+    result.innerText = "Leave exactly ONE field empty.";
+    return;
+  }
+
+  const targetExposure = exposure(l.t, l.iso, l.nd, l.sh, l.fps);
+  const key = empty[0];
+
+  let val;
+
+  if(key==="t"){
+    val = Math.sqrt(
+      ( (+r_iso.value) * shutterTime(+r_shutter.value, +r_fps.value) ) /
+      ( Math.pow(2, +r_nd.value) * Math.pow(2, targetExposure) )
+    );
+    r_t.value = val.toFixed(2);
+  }
+
+  if(key==="iso"){
+    val = Math.pow(2, targetExposure) *
+          (Math.pow(+r_t.value,2) * Math.pow(2,+r_nd.value)) /
+          shutterTime(+r_shutter.value, +r_fps.value);
+    r_iso.value = Math.round(val);
+  }
+
+  if(key==="nd"){
+    val = log2(
+      (+r_iso.value * shutterTime(+r_shutter.value, +r_fps.value)) /
+      (Math.pow(+r_t.value,2) * Math.pow(2,targetExposure))
+    );
+    r_nd.value = val.toFixed(2);
+  }
+
+  if(key==="sh"){
+    val = (
+      Math.pow(2,targetExposure) *
+      Math.pow(+r_t.value,2) *
+      Math.pow(2,+r_nd.value)
+    ) / (+r_iso.value) * 360 * +r_fps.value;
+    r_shutter.value = val.toFixed(0);
+  }
+
+  if(key==="fps"){
+    val = (
+      (+r_shutter.value/360) /
+      ( Math.pow(2,targetExposure) *
+        Math.pow(+r_t.value,2) *
+        Math.pow(2,+r_nd.value) /
+        +r_iso.value )
+    );
+    r_fps.value = val.toFixed(2);
+  }
+
+  result.innerText = `Calculated: ${key.toUpperCase()}`;
+}
+
+document.querySelectorAll("input").forEach(i =>
+  i.addEventListener("input", recalc)
+);
+</script>
+
+</body>
+</html>
