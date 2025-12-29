@@ -79,3 +79,12 @@ button{
 .camera-pair > div{
   text-align:center;
 }
+input[type="number"]{
+  width:100%;
+  padding:10px;
+  background:#000;
+  color:#fff;
+  border:1px solid #333;
+  border-radius:8px;
+  margin-top:6px;
+}
