@@ -59,9 +59,6 @@ input, select{
   padding-top:10px;
   border-top:1px solid #222;
 }
-.calc-block label{
-  opacity:.9;
-}
 button{
   display:block;
   margin:30px auto 20px;
@@ -74,14 +71,13 @@ button{
   cursor:pointer;
 }
 .result{
-  max-width:700px;
+  max-width:760px;
   margin:0 auto;
   background:#111;
   border-radius:16px;
   padding:20px;
   font-family: ui-monospace, monospace;
   line-height:1.6;
-  opacity:.95;
 }
 .result strong{
   display:block;
@@ -99,11 +95,14 @@ button{
 <div class="card">
 <h2>Source Exposure</h2>
 
+<label>Camera</label>
+<select id="l_cam"></select>
+
 <label>T-Stop</label>
 <input id="l_t" type="number" step="0.01" value="2.8">
 
 <label>ISO</label>
-<input id="l_iso" type="number" value="800">
+<select id="l_iso"></select>
 
 <label>ND (stops)</label>
 <input id="l_nd" type="number" step="0.1" value="0.3">
@@ -124,6 +123,9 @@ button{
 <div class="card">
 <h2>Target Exposure</h2>
 
+<label>Camera</label>
+<select id="r_cam"></select>
+
 <div class="calc-block">
 <strong>Calculate:</strong>
 <label><input type="radio" name="calc" value="nd" checked> ND</label>
@@ -136,7 +138,7 @@ button{
 <input id="r_t" type="number" step="0.01" value="3.6">
 
 <label>ISO</label>
-<input id="r_iso" type="number" value="2500">
+<select id="r_iso"></select>
 
 <label>ND (stops)</label>
 <input id="r_nd" type="number" step="0.1" value="0">
@@ -160,6 +162,22 @@ button{
 <div class="result" id="result"></div>
 
 <script>
+/* CAMERA PRESETS */
+const CAMS = {
+  alexa: {
+    name: "ARRI Alexa Mini LF",
+    iso: [160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],
+    defaultISO: 800
+  },
+  venice: {
+    name: "Sony VENICE",
+    iso: [125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,4000,5000,6400,8000,10000],
+    defaultISO: 500
+  }
+};
+
+const ND_STEPS = [0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,2.7,3.0];
+
 const log2 = x => Math.log(x)/Math.log(2);
 const shutterTime = (a,f)=>(a/360)*(1/f);
 
@@ -167,52 +185,90 @@ function exposure(t,iso,nd,sh,fps){
   return log2(iso * shutterTime(sh,fps) / (t*t) / Math.pow(2,nd));
 }
 
-const ND_STEPS=[0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,2.7,3.0];
-
-function nearestND(x){
-  return ND_STEPS.reduce((a,b)=>Math.abs(b-x)<Math.abs(a-x)?b:a);
+function nearest(val, arr){
+  return arr.reduce((a,b)=>Math.abs(b-val)<Math.abs(a-val)?b:a);
 }
 
+/* INIT CAM SELECTORS */
+function initCams(){
+  [l_cam, r_cam].forEach(sel=>{
+    sel.innerHTML="";
+    Object.keys(CAMS).forEach(k=>{
+      const o=document.createElement("option");
+      o.value=k;
+      o.text=CAMS[k].name;
+      sel.appendChild(o);
+    });
+  });
+  l_cam.value="alexa";
+  r_cam.value="venice";
+  updateISO(l_cam, l_iso);
+  updateISO(r_cam, r_iso);
+}
+
+function updateISO(camSel, isoSel){
+  const cam=CAMS[camSel.value];
+  isoSel.innerHTML="";
+  cam.iso.forEach(v=>{
+    const o=document.createElement("option");
+    o.value=v;
+    o.text=v;
+    isoSel.appendChild(o);
+  });
+  isoSel.value=cam.defaultISO;
+}
+
+l_cam.onchange=()=>updateISO(l_cam,l_iso);
+r_cam.onchange=()=>updateISO(r_cam,r_iso);
+
+initCams();
+
+/* CALCULATION */
 function calculate(){
   const base = exposure(+l_t.value,+l_iso.value,+l_nd.value,+l_sh.value,+l_fps.value);
   const mode = document.querySelector("input[name=calc]:checked").value;
-  let out = "";
+  let out="";
 
   if(mode==="nd"){
     const exact = log2((+r_iso.value*shutterTime(+r_sh.value,+r_fps.value))/(Math.pow(+r_t.value,2)*Math.pow(2,base)));
-    const nd = Math.max(0, nearestND(exact));
+    const nd = Math.max(0, nearest(exact, ND_STEPS));
     const remaining = exact - nd;
 
-    out += `<strong>Set ND to:</strong> ${nd.toFixed(1)}<br><br>`;
+    out+=`<strong>Set ND to:</strong> ${nd.toFixed(1)}<br><br>`;
 
     if(Math.abs(remaining)>0.01){
-      out += `<strong>Remaining difference:</strong> ${remaining>0?"+":""}${remaining.toFixed(2)} stop<br><br>`;
-      const isoNew = +r_iso.value * Math.pow(2, remaining);
+      const cam=CAMS[r_cam.value];
+      const isoExact = +r_iso.value * Math.pow(2, remaining);
+      const isoRounded = nearest(isoExact, cam.iso);
       const tNew = +r_t.value / Math.sqrt(Math.pow(2, remaining));
-      out += `Compensate with:<br>`;
-      out += `• ISO: ${r_iso.value} → ${Math.round(isoNew)}<br>`;
-      out += `• or T-Stop: T${r_t.value} → T${tNew.toFixed(2)}`;
+
+      out+=`<strong>Remaining difference:</strong> ${remaining>0?"+":""}${remaining.toFixed(2)} stop<br><br>`;
+      out+=`Compensate with:<br>`;
+      out+=`• ISO: ${r_iso.value} → ${isoRounded}<br>`;
+      out+=`• or T-Stop: T${r_t.value} → T${tNew.toFixed(2)}`;
     } else {
-      out += `No further compensation needed.`;
+      out+=`No further compensation needed.`;
     }
   }
 
   if(mode==="iso"){
-    const v = Math.pow(2,base)*Math.pow(+r_t.value,2)*Math.pow(2,+r_nd.value)/shutterTime(+r_sh.value,+r_fps.value);
-    out = `<strong>Set ISO to:</strong> ${Math.round(v)}`;
+    const cam=CAMS[r_cam.value];
+    const isoExact = Math.pow(2,base)*Math.pow(+r_t.value,2)*Math.pow(2,+r_nd.value)/shutterTime(+r_sh.value,+r_fps.value);
+    const isoRounded = nearest(isoExact, cam.iso);
+    out=`<strong>Set ISO to:</strong> ${isoRounded}`;
   }
 
   if(mode==="t"){
     const v = Math.sqrt((+r_iso.value*shutterTime(+r_sh.value,+r_fps.value))/(Math.pow(2,+r_nd.value)*Math.pow(2,base)));
-    out = `<strong>Set T-Stop to:</strong> T${v.toFixed(2)}`;
+    out=`<strong>Set T-Stop to:</strong> T${v.toFixed(2)}`;
   }
 
   if(mode==="sh"){
     const v = (Math.pow(2,base)*Math.pow(+r_t.value,2)*Math.pow(2,+r_nd.value)/+r_iso.value)*360*+r_fps.value;
-    out = `<strong>Set Shutter Angle to:</strong> ${v.toFixed(1)}°`;
+    out=`<strong>Set Shutter Angle to:</strong> ${v.toFixed(1)}°`;
   }
 
-  result.innerHTML = out;
+  result.innerHTML=out;
 }
 </script>
 
