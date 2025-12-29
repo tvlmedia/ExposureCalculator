@@ -43,10 +43,10 @@ function calculate(){
   const SHB  = shutterStops(+b_fps.value, +b_shutter.value);
 
   // Total exposure in stops
-  const TOTAL_A = TA + ISOA + SHA - NDA;
+  const TOTAL_A = TA + ISOA + SHA + NDA;
 
   // Solve T for B
-  const TB = TOTAL_A - (ISOB + SHB - NDB);
+ const TB = TOTAL_A - (ISOB + SHB + NDB);
 
   if (TB < 0 || TB >= T_SCALE.length){
     result.innerHTML =
