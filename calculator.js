@@ -5,147 +5,179 @@
 ========================= */
 
 const T_SCALE = ["T1.0","T1.4","T2.0","T2.8","T4.0","T5.6","T8.0","T11","T16","T22"];
-const SHUTTER_OPTIONS = [
-  { angle: 360, stops: +1 },
-  { angle: 180, stops:  0 },
-  { angle: 90,  stops: -1 },
-  { angle: 45,  stops: -2 }
-];
+const ND_STEP = 0.3;
+const REF_SHUTTER = 1 / 50; // reference: 25fps @ 180°
 
 /* =========================
-   STOP HELPERS
+   HELPERS
 ========================= */
 
 function isoStops(iso){
   return Math.log2(iso / 800);
 }
 
+function shutterSpeed(fps, angle){
+  return (angle / 360) * (1 / fps);
+}
+
 function shutterStops(fps, angle){
-  let s = 0;
-  if (fps === 50) s -= 1;
-  if (angle === 360) s += 1;
-  if (angle === 90)  s -= 1;
-  if (angle === 45)  s -= 2;
-  return s;
+  const s = shutterSpeed(fps, angle);
+  return Math.log2(s / REF_SHUTTER);
 }
 
 /* =========================
-   UI STATE
+   UI MODE HANDLING
 ========================= */
 
-document.querySelectorAll("input[name='calc']")
-  .forEach(r => r.addEventListener("change", updateUI));
+const targets = {
+  t: "b_t",
+  iso: "b_iso",
+  nd: "b_nd",
+  shutter: "b_shutter",
+  fps: "b_fps"
+};
+
+document.querySelectorAll("input[name='calc']").forEach(r =>
+  r.addEventListener("change", updateUI)
+);
 
 function updateUI(){
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  const targets = {
-    t: b_t,
-    iso: b_iso,
-    nd: b_nd,
-    shutter: b_shutter,
-    fps: b_fps
-  };
-
-  // reset alles
-  Object.values(targets).forEach(el => {
-    el.classList.remove("calculated");
+  Object.values(targets).forEach(id => {
+    const el = document.getElementById(id);
+    el.disabled = false;
   });
 
-  // grey exact 1 veld
-  targets[mode].classList.add("calculated");
-
-  result.innerHTML = "Result will appear here…";
+  document.getElementById(targets[mode]).disabled = true;
 }
 
 /* =========================
-   CORE CALC
+   CORE CALCULATION
 ========================= */
+
+function exposure(fps, angle, iso, tIndex, ndStops){
+  return (
+    isoStops(iso) +
+    shutterStops(fps, angle) -
+    tIndex -
+    ndStops
+  );
+}
 
 function calculate(){
 
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  // ---------- A ----------
-  const TA   = parseInt(a_t.value);
-  const ISOA = isoStops(+a_iso.value);
-  const NDA  = parseInt(a_nd.value);
-  const SHA  = shutterStops(+a_fps.value, +a_shutter.value);
+  // ---- A ----
+  const EA = exposure(
+    +a_fps.value,
+    +a_shutter.value,
+    +a_iso.value,
+    +a_t.value,
+    +a_nd.value
+  );
 
-  const EXP_A = ISOA + SHA - TA - NDA;
+  // ---- B known ----
+  const fpsB = +b_fps.value;
+  const angB = +b_shutter.value;
+  const isoB = +b_iso.value;
+  const tB   = +b_t.value;
+  const ndB  = +b_nd.value;
 
-  // ---------- B common ----------
-  const ISOB = b_iso.value ? isoStops(+b_iso.value) : null;
-  const NDB  = b_nd.value  ? parseInt(b_nd.value) : null;
-  const SHB  = (b_fps.value && b_shutter.value)
-    ? shutterStops(+b_fps.value, +b_shutter.value)
-    : null;
-  const TB   = b_t.value ? parseInt(b_t.value) : null;
-
-  /* =====================
-     MODES
-  ===================== */
-
-  // ---- T-STOP ----
+  // ---------------- T-STOP ----------------
   if (mode === "t"){
-    const t = ISOB + SHB - NDB - EXP_A;
+    const t = isoStops(isoB)
+            + shutterStops(fpsB, angB)
+            - ndB
+            - EA;
 
     if (!Number.isInteger(t) || t < 0 || t >= T_SCALE.length){
       result.innerHTML = "⚠️ T-stop out of range";
       return;
     }
 
-    b_t.value = t;
     result.innerHTML = `Set B T-Stop to <strong>${T_SCALE[t]}</strong>`;
     return;
   }
 
-  // ---- ISO ----
+  // ---------------- ISO ----------------
   if (mode === "iso"){
-    const isoStopsB = EXP_A - SHB + TB + NDB;
-    const iso = 800 * Math.pow(2, isoStopsB);
+    const isoStopsB =
+      EA -
+      shutterStops(fpsB, angB) +
+      tB +
+      ndB;
 
-    b_iso.value = Math.round(iso);
+    const iso = 800 * Math.pow(2, isoStopsB);
     result.innerHTML = `Set B ISO to <strong>${Math.round(iso)}</strong>`;
     return;
   }
 
-  // ---- ND ----
+  // ---------------- ND ----------------
   if (mode === "nd"){
-    const ndStops = ISOB + SHB - TB - EXP_A;
+    const ndStops =
+      isoStops(isoB) +
+      shutterStops(fpsB, angB) -
+      tB -
+      EA;
 
     if (ndStops < 0){
-      result.innerHTML =
-        "⚠️ Cannot solve with ND only<br>Open T-stop or raise ISO";
+      result.innerHTML = "⚠️ Cannot solve with ND only";
       return;
     }
 
-    const ndValue = Math.round(ndStops * 10) / 10;
-    b_nd.value = Math.round(ndStops);
-    result.innerHTML = `Set B ND to <strong>${(ndValue*0.3).toFixed(1)}</strong>`;
+    result.innerHTML =
+      `Set B ND to <strong>${(ndStops * ND_STEP).toFixed(1)}</strong>`;
     return;
   }
 
-  // ---- SHUTTER ----
+  // ---------------- SHUTTER ----------------
   if (mode === "shutter"){
-    const needed = EXP_A - ISOB + TB + NDB;
+    const targetStops =
+      EA -
+      isoStops(isoB) +
+      tB +
+      ndB;
 
-    const match = SHUTTER_OPTIONS.find(o => o.stops === needed);
+    const options = [
+      {angle:360, stops: Math.log2(shutterSpeed(fpsB,360)/REF_SHUTTER)},
+      {angle:180, stops: Math.log2(shutterSpeed(fpsB,180)/REF_SHUTTER)},
+      {angle:90,  stops: Math.log2(shutterSpeed(fpsB,90 )/REF_SHUTTER)},
+      {angle:45,  stops: Math.log2(shutterSpeed(fpsB,45 )/REF_SHUTTER)}
+    ];
+
+    const match = options.find(o => Math.abs(o.stops - targetStops) < 0.01);
 
     if (!match){
       result.innerHTML = "⚠️ No valid shutter angle";
       return;
     }
 
-    b_shutter.value = match.angle;
-    result.innerHTML = `Set B Shutter Angle to <strong>${match.angle}°</strong>`;
+    result.innerHTML =
+      `Set B Shutter Angle to <strong>${match.angle}°</strong>`;
     return;
   }
 
-  // ---- FPS ----
+  // ---------------- FPS ----------------
   if (mode === "fps"){
-    result.innerHTML =
-      "⚠️ FPS compensation ambiguous<br>Use shutter or ISO instead";
+    const fpsOptions = [25, 50];
+
+    for (let f of fpsOptions){
+      const s = shutterStops(f, angB);
+      const e =
+        isoStops(isoB) +
+        s -
+        tB -
+        ndB;
+
+      if (Math.abs(e - EA) < 0.01){
+        result.innerHTML = `Set B Frame Rate to <strong>${f} fps</strong>`;
+        return;
+      }
+    }
+
+    result.innerHTML = "⚠️ No valid FPS solution";
   }
 }
 
