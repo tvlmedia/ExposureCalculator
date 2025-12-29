@@ -67,36 +67,18 @@ function populateND(select, cam){
 
   if (CAMERA_DATA[cam].nd.type === "fixed"){
     values = CAMERA_DATA[cam].nd.values;
-  } 
-  else if (CAMERA_DATA[cam].nd.type === "eterna") {
-
-    // Clear + 0.3
-    values.push(0);
-    values.push(0.3);
-
-    // Internal ND: 0.6 → 2.1 in 0.05 steps
-    for (let v = 0.6; v <= 2.1 + 0.0001; v += 0.05){
+  } else {
+    values.push(0, 0.3);
+    for (let v=0.6; v<=2.1+0.0001; v+=0.05){
       values.push(Number(v.toFixed(2)));
     }
-
-    // Physical ND continuation
     values.push(2.4);
   }
 
   values.forEach(v=>{
-    const o = document.createElement("option");
-    o.value = v;
-    o.textContent = v === 0 ? "Clear" : v.toFixed(2);
-    select.appendChild(o);
-  });
-
-  select.value = 0;
-}
-
-  values.forEach(v=>{
     const o=document.createElement("option");
     o.value=v;
-    o.textContent = v===0 ? "Clear" : v.toFixed(2);
+    o.textContent = v === 0 ? "Clear" : v.toFixed(2);
     select.appendChild(o);
   });
 
@@ -120,42 +102,12 @@ function getT(side){
 }
 
 /* =========================
-   MODE UI (FIXED)
-========================= */
-
-function updateModeUI(){
-  const mode = document.querySelector("input[name='calc']:checked").value;
-
-  // reset alles
-  [b_iso, b_nd, b_shutter, b_fps].forEach(el=>{
-    el.disabled = false;
-    el.classList.remove("calculated");
-  });
-
-  resetTStop();
-
-  // lock ONLY the calculated field
-  if (mode === "iso") lockField(b_iso);
-  if (mode === "nd") lockField(b_nd);
-  if (mode === "shutter") lockField(b_shutter);
-  if (mode === "fps") lockField(b_fps);
-
-  if (mode === "t"){
-    b_t.disabled = true;
-    b_t.classList.add("calculated");
-    b_t.innerHTML = `<option>— calculated —</option>`;
-    b_t_custom.style.display = "none";
-  }
-
-  result.innerHTML = "Result will appear here…";
-}
-
-/* =========================
    CALCULATION
 ========================= */
 
 function calculate(){
   const mode = document.querySelector("input[name='calc']:checked").value;
+  const camB = camera_b.value;
 
   const EA = exposure(
     +a_fps.value,
@@ -184,51 +136,35 @@ function calculate(){
     return;
   }
 
-  if (mode === "nd") {
+  if (mode === "nd"){
+    const needed =
+      isoStops(isoB) +
+      shutterStops(fpsB, angB) +
+      tStops(tB) -
+      EA;
 
-  const ndStopsNeeded =
-    isoStops(isoB) +
-    shutterStops(fpsB, angB) +
-    tStops(tB) -
-    EA;
+    if (needed <= 0){
+      result.innerHTML =
+        "⚠️ ND cannot be negative.<br><small>Camera B is already darker.</small>";
+      return;
+    }
 
-  // ND can never be negative
-  if (ndStopsNeeded <= 0) {
+    const ndValues = [];
+    populateND({ appendChild(o){ ndValues.push(Number(o.value)); } }, camB);
+
+    const chosen = ndValues.find(v => v >= needed);
+    if (chosen === undefined){
+      result.innerHTML = "⚠️ ND exceeds camera range";
+      return;
+    }
+
     result.innerHTML =
-      "⚠️ ND cannot be negative.<br>" +
-      "<small>Camera B is already darker than A — adjust ISO, T-Stop or Shutter instead.</small>";
+      `Set B ND to <strong>${chosen.toFixed(2)}</strong>
+       <br><small>(${needed.toFixed(2)} stops)</small>`;
     return;
   }
 
-  const ndProfile = CAMERA_DATA[camB].nd;
-
-  const roundedND =
-    Math.round(ndStopsNeeded / ndProfile.step) * ndProfile.step;
-
-  result.innerHTML =
-    `Set B ND to <strong>${roundedND.toFixed(2)}</strong>
-     <br><small>(${ndStopsNeeded.toFixed(2)} stops)</small>`;
-  return;
-}
-  if (mode === "shutter"){
-    for (let a of [360,180,90,45]){
-      if (Math.abs(shutterStops(fpsB,a)-(EA-isoStops(isoB)-tStops(tB)+ndB))<0.01){
-        result.innerHTML = `Set B Shutter to <strong>${a}°</strong>`;
-        return;
-      }
-    }
-    result.innerHTML="⚠️ No solution";
-  }
-
-  if (mode === "fps"){
-    for (let f of [25,50]){
-      if (Math.abs(exposure(f,angB,isoB,tB,ndB)-EA)<0.01){
-        result.innerHTML = `Set B FPS to <strong>${f}</strong>`;
-        return;
-      }
-    }
-    result.innerHTML="⚠️ No solution";
-  }
+  result.innerHTML = "⚠️ No solution";
 }
 
 /* =========================
@@ -238,10 +174,7 @@ function calculate(){
 camera_a.onchange = ()=>{ populateISO(a_iso,camera_a.value); populateND(a_nd,camera_a.value); };
 camera_b.onchange = ()=>{ populateISO(b_iso,camera_b.value); populateND(b_nd,camera_b.value); };
 
-document.querySelectorAll("input[name='calc']").forEach(r=>r.onchange=updateModeUI);
-
 populateISO(a_iso,camera_a.value);
 populateISO(b_iso,camera_b.value);
 populateND(a_nd,camera_a.value);
 populateND(b_nd,camera_b.value);
-updateModeUI();
