@@ -23,46 +23,40 @@ const CAMERA_ISO = {
 ========================= */
 
 const ND_STEP = 0.3;
-const REF_T = 2.8;                // reference T-stop
-const REF_SHUTTER = 1 / 50;       // 25fps @ 180°
+const REF_T = 2.8;            // T2.8 = 0.00 stop
+const REF_SHUTTER = 1 / 50;   // 25fps @ 180°
 
 /* =========================
-   T-STOP MATH (CORE!)
+   CORE PHYSICS
 ========================= */
 
-// Convert T value (e.g. 1.6, 2.8, 4.0) → stop offset relative to T2.8
-function tToStops(T){
-  return 2 * Math.log2(T / REF_T);
-}
-
-// Convert stop offset → T value
-function stopsToT(stops){
-  return REF_T * Math.pow(2, stops / 2);
-}
-
-/* =========================
-   OTHER HELPERS
-========================= */
-
+// ISO → stops
 function isoStops(iso){
   return Math.log2(iso / 800);
 }
 
+// Shutter speed in seconds
 function shutterSpeed(fps, angle){
   return (angle / 360) * (1 / fps);
 }
 
+// Shutter → stops
 function shutterStops(fps, angle){
   return Math.log2(shutterSpeed(fps, angle) / REF_SHUTTER);
 }
 
-function exposure(fps, angle, iso, tStops, ndStops){
-  return isoStops(iso) + shutterStops(fps, angle) - tStops - ndStops;
+// T-stop → stops (PHYSICALLY CORRECT)
+function tStops(t){
+  return -2 * Math.log2(t / REF_T);
 }
 
-function nearestISO(value, list){
-  return list.reduce((a,b) =>
-    Math.abs(b - value) < Math.abs(a - value) ? b : a
+// Total exposure in stops
+function exposure(fps, angle, iso, t, ndStops){
+  return (
+    isoStops(iso) +
+    shutterStops(fps, angle) +
+    tStops(t) -
+    ndStops
   );
 }
 
@@ -87,46 +81,27 @@ function populateISO(selectEl, cameraKey){
 }
 
 /* =========================
-   UI HANDLING
+   UI HELPERS
 ========================= */
 
-camera_a.addEventListener("change", () => {
-  populateISO(a_iso, camera_a.value);
-});
-
-camera_b.addEventListener("change", () => {
-  populateISO(b_iso, camera_b.value);
-});
-
-document.querySelectorAll("input[name='calc']")
-  .forEach(r => r.addEventListener("change", updateUI));
-
-function updateUI(){
-  const mode = document.querySelector("input[name='calc']:checked").value;
-
-  [b_t, b_iso, b_nd, b_shutter, b_fps].forEach(el => {
-    el.classList.remove("calculated");
-  });
-
-  if (mode === "t")       b_t.classList.add("calculated");
-  if (mode === "iso")     b_iso.classList.add("calculated");
-  if (mode === "nd")      b_nd.classList.add("calculated");
-  if (mode === "shutter") b_shutter.classList.add("calculated");
-  if (mode === "fps")     b_fps.classList.add("calculated");
-
-  result.innerHTML = "Result will appear here…";
+function getTValue(selectEl, inputEl){
+  if (selectEl.value === "custom"){
+    return parseFloat(inputEl.value);
+  }
+  return parseFloat(selectEl.value);
 }
 
 /* =========================
-   CORE CALCULATION
+   CALCULATION
 ========================= */
 
 function calculate(){
 
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  // ---------- A ----------
-  const tA = tToStops(+a_t.value); // <-- KEY CHANGE
+  // ---- A ----
+  const tA = getTValue(a_t, a_t_custom);
+
   const EA = exposure(
     +a_fps.value,
     +a_shutter.value,
@@ -135,48 +110,63 @@ function calculate(){
     +a_nd.value
   );
 
-  // ---------- B ----------
+  // ---- B ----
+  const tB = getTValue(b_t, b_t_custom);
+
   const fpsB = +b_fps.value;
   const angB = +b_shutter.value;
   const isoB = +b_iso.value;
-  const tB   = tToStops(+b_t.value);
   const ndB  = +b_nd.value;
+
+  /* =====================
+     MODES
+  ===================== */
 
   // ---- T-STOP ----
   if (mode === "t"){
-    const tStops = isoStops(isoB) + shutterStops(fpsB, angB) - ndB - EA;
-    const tValue = stopsToT(tStops);
+    const targetStops =
+      EA -
+      isoStops(isoB) -
+      shutterStops(fpsB, angB) +
+      ndB;
+
+    // solve: stops = -2 log2(T / 2.8)
+    const tSolved =
+      REF_T * Math.pow(2, -targetStops / 2);
 
     result.innerHTML =
-      `Set B T-Stop to <strong>T${tValue.toFixed(2)}</strong>
-       <br><small>(offset: ${tStops.toFixed(2)} stops)</small>`;
+      `Set B T-Stop to <strong>T${tSolved.toFixed(2)}</strong>
+       <br><small>(offset: ${targetStops.toFixed(2)} stops)</small>`;
     return;
   }
 
   // ---- ISO ----
   if (mode === "iso"){
-    const isoRaw =
-      800 * Math.pow(2, EA - shutterStops(fpsB, angB) + tB + ndB);
-
-    const isoFinal = nearestISO(
-      isoRaw,
-      CAMERA_ISO[camera_b.value].iso
-    );
+    const iso =
+      800 * Math.pow(
+        2,
+        EA -
+        shutterStops(fpsB, angB) -
+        tStops(tB) +
+        ndB
+      );
 
     result.innerHTML =
-      `Set B ISO to <strong>${isoFinal}</strong>
-       <br><small>(raw: ${Math.round(isoRaw)})</small>`;
+      `Set B ISO to <strong>${Math.round(iso)}</strong>`;
     return;
   }
 
   // ---- ND ----
   if (mode === "nd"){
     const ndStops =
-      isoStops(isoB) + shutterStops(fpsB, angB) - tB - EA;
+      isoStops(isoB) +
+      shutterStops(fpsB, angB) +
+      tStops(tB) -
+      EA;
 
     if (ndStops < 0){
       result.innerHTML =
-        "⚠️ Cannot solve with ND only<br>Open T-stop or raise ISO";
+        "⚠️ Cannot solve with ND only";
       return;
     }
 
@@ -187,10 +177,13 @@ function calculate(){
 
   // ---- SHUTTER ----
   if (mode === "shutter"){
-    const target = EA - isoStops(isoB) + tB + ndB;
-    const angles = [360,180,90,45];
+    const target =
+      EA -
+      isoStops(isoB) -
+      tStops(tB) +
+      ndB;
 
-    for (let a of angles){
+    for (let a of [360,180,90,45]){
       if (Math.abs(shutterStops(fpsB, a) - target) < 0.01){
         result.innerHTML =
           `Set B Shutter Angle to <strong>${a}°</strong>`;
@@ -207,8 +200,8 @@ function calculate(){
     for (let f of [25,50]){
       const e =
         isoStops(isoB) +
-        shutterStops(f, angB) -
-        tB -
+        shutterStops(f, angB) +
+        tStops(tB) -
         ndB;
 
       if (Math.abs(e - EA) < 0.01){
@@ -228,4 +221,3 @@ function calculate(){
 
 populateISO(a_iso, camera_a.value);
 populateISO(b_iso, camera_b.value);
-updateUI();
