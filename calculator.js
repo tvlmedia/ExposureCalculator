@@ -39,17 +39,21 @@ document.querySelectorAll("input[name='calc']")
 function updateUI(){
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  // alles resetten
-  [b_t, b_iso, b_nd, b_shutter, b_fps].forEach(el => {
+  const targets = {
+    t: b_t,
+    iso: b_iso,
+    nd: b_nd,
+    shutter: b_shutter,
+    fps: b_fps
+  };
+
+  // reset alles
+  Object.values(targets).forEach(el => {
     el.classList.remove("calculated");
   });
 
-  // exact 1 target greyed-out
-  if (mode === "t")       b_t.classList.add("calculated");
-  if (mode === "iso")     b_iso.classList.add("calculated");
-  if (mode === "nd")      b_nd.classList.add("calculated");
-  if (mode === "shutter") b_shutter.classList.add("calculated");
-  if (mode === "fps")     b_fps.classList.add("calculated");
+  // grey exact 1 veld
+  targets[mode].classList.add("calculated");
 
   result.innerHTML = "Result will appear here…";
 }
