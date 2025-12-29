@@ -27,7 +27,7 @@ const REF_T = 2.8;            // T2.8 = 0.00 stop
 const REF_SHUTTER = 1 / 50;   // 25fps @ 180°
 
 /* =========================
-   CORE PHYSICS
+   CORE PHYSICS (CORRECT)
 ========================= */
 
 // ISO → stops
@@ -35,7 +35,7 @@ function isoStops(iso){
   return Math.log2(iso / 800);
 }
 
-// Shutter speed in seconds
+// Shutter speed (seconds)
 function shutterSpeed(fps, angle){
   return (angle / 360) * (1 / fps);
 }
@@ -50,7 +50,7 @@ function tStops(t){
   return -2 * Math.log2(t / REF_T);
 }
 
-// Total exposure in stops
+// Total exposure (stops)
 function exposure(fps, angle, iso, t, ndStops){
   return (
     isoStops(iso) +
@@ -89,6 +89,18 @@ function getTValue(selectEl, inputEl){
     return parseFloat(inputEl.value);
   }
   return parseFloat(selectEl.value);
+}
+
+function toggleCustomT(side){
+  const select = document.getElementById(`${side}_t`);
+  const input  = document.getElementById(`${side}_t_custom`);
+
+  if (select.value === "custom"){
+    input.style.display = "block";
+    input.focus();
+  } else {
+    input.style.display = "none";
+  }
 }
 
 /* =========================
@@ -130,7 +142,6 @@ function calculate(){
       shutterStops(fpsB, angB) +
       ndB;
 
-    // solve: stops = -2 log2(T / 2.8)
     const tSolved =
       REF_T * Math.pow(2, -targetStops / 2);
 
@@ -165,8 +176,7 @@ function calculate(){
       EA;
 
     if (ndStops < 0){
-      result.innerHTML =
-        "⚠️ Cannot solve with ND only";
+      result.innerHTML = "⚠️ Cannot solve with ND only";
       return;
     }
 
