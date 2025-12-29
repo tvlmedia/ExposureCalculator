@@ -128,10 +128,16 @@ function calculate(){
   if (mode === "t"){
     const t = isoStops(isoB) + shutterStops(fpsB, angB) - ndB - EA;
 
-    if (!Number.isInteger(t) || t < 0 || t >= T_SCALE.length){
-      result.innerHTML = "⚠️ T-stop out of range";
-      return;
-    }
+   const tRounded = Math.round(t);
+
+if (tRounded < 0 || tRounded >= T_SCALE.length){
+  result.innerHTML = "⚠️ T-stop out of range";
+  return;
+}
+
+result.innerHTML =
+  `Set B T-Stop to <strong>${T_SCALE[tRounded]}</strong>
+   <br><small>(calculated: ${t.toFixed(2)} stops)</small>`;
 
     result.innerHTML = `Set B T-Stop to <strong>${T_SCALE[t]}</strong>`;
     return;
