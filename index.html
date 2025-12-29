@@ -10,6 +10,15 @@
 
 <h1>Exposure Tool (Stop-Discrete)</h1>
 
+<!-- WHAT TO CALCULATE -->
+<div class="calc-select">
+  <label><input type="radio" name="calc" value="t" checked> T-Stop</label>
+  <label><input type="radio" name="calc" value="iso"> ISO</label>
+  <label><input type="radio" name="calc" value="nd"> ND</label>
+  <label><input type="radio" name="calc" value="shutter"> Shutter</label>
+  <label><input type="radio" name="calc" value="fps"> Frame Rate</label>
+</div>
+
 <div class="grid">
 
   <!-- A -->
@@ -83,21 +92,29 @@
     <label>ISO</label>
     <select id="b_iso">
       <option>200</option>
-      <option selected>400</option>
-      <option>800</option>
+      <option>400</option>
+      <option selected>800</option>
       <option>1600</option>
       <option>3200</option>
     </select>
 
-    <label>T-Stop (to calculate)</label>
-    <select id="b_t" disabled>
-      <option>— calculated —</option>
+    <label>T-Stop</label>
+    <select id="b_t">
+      <option value="">— calculated —</option>
+      <option value="0">T1.0</option>
+      <option value="1">T1.4</option>
+      <option value="2">T2.0</option>
+      <option value="3">T2.8</option>
+      <option value="4">T4.0</option>
+      <option value="5">T5.6</option>
+      <option value="6">T8.0</option>
+      <option value="7">T11</option>
     </select>
 
     <label>ND</label>
     <select id="b_nd">
       <option value="0">Clear</option>
-      <option value="1" selected>0.3</option>
+      <option value="1">0.3</option>
       <option value="2">0.6</option>
       <option value="3">0.9</option>
       <option value="4">1.2</option>
@@ -107,7 +124,7 @@
 
 </div>
 
-<button onclick="calculate()">CALCULATE T-STOP</button>
+<button onclick="calculate()">CALCULATE</button>
 
 <div class="result" id="result"></div>
 
