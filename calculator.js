@@ -1,6 +1,6 @@
 "use strict";
 
-// T-stop scale as stop indices
+// Discrete T-stop ladder (index = stops darker)
 const T_SCALE = [
   "T1.0",
   "T1.4",
@@ -12,43 +12,54 @@ const T_SCALE = [
   "T11"
 ];
 
-// ISO to stop offset relative to ISO 800
+// ISO stops relative to ISO 800
 function isoStops(iso){
   return Math.log2(iso / 800);
 }
 
-// Shutter stop offsets (set-logic, not physics)
+// Shutter stops (practical cinematography logic)
 function shutterStops(fps, angle){
   let stops = 0;
 
   if (fps === 50) stops -= 1;
   if (angle === 360) stops += 1;
-  if (angle === 90) stops -= 1;
-  if (angle === 45) stops -= 2;
+  if (angle === 90)  stops -= 1;
+  if (angle === 45)  stops -= 2;
 
   return stops;
 }
 
 function calculate(){
 
-  // --- A ---
-  const TA  = parseInt(a_t.value);
+  // ---------- A ----------
+  const TA   = parseInt(a_t.value);     // T-stop index (darker = higher)
   const ISOA = isoStops(+a_iso.value);
-  const NDA  = parseInt(a_nd.value);
+  const NDA  = parseInt(a_nd.value);    // ND in stops
   const SHA  = shutterStops(+a_fps.value, +a_shutter.value);
 
-  // --- B (unknown T) ---
+  // ---------- B ----------
   const ISOB = isoStops(+b_iso.value);
   const NDB  = parseInt(b_nd.value);
   const SHB  = shutterStops(+b_fps.value, +b_shutter.value);
 
-  // Total exposure in stops
-  const TOTAL_A = TA + ISOA + SHA + NDA;
+  /*
+    Exposure logic in stops:
 
-  // Solve T for B
- const TB = TOTAL_A - (ISOB + SHB + NDB);
+    exposure =
+      + ISO
+      + shutter
+      - T-stop
+      - ND
+  */
 
-  if (TB < 0 || TB >= T_SCALE.length){
+  const EXPOSURE_A =
+    ISOA + SHA - TA - NDA;
+
+  // Solve T for B:
+  // EXPOSURE_A = ISOB + SHB - TB - NDB
+  const TB = ISOB + SHB - NDB - EXPOSURE_A;
+
+  if (!Number.isInteger(TB) || TB < 0 || TB >= T_SCALE.length){
     result.innerHTML =
       "<strong>Result</strong><br>⚠️ Out of T-stop range";
     return;
