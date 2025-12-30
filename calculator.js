@@ -439,7 +439,16 @@ function getShutter(side){
 
   return parseFloat(sel.value);
 }
+function shutterAngleFromStops(fps, stops){
+  // shutterStops = log2( shutterSpeed / REF_SHUTTER )
+  // shutterSpeed = REF_SHUTTER * 2^stops
+  // shutterSpeed = (angle / 360) * (1 / fps)
 
+  const shutterSpeedExact = REF_SHUTTER * Math.pow(2, stops);
+  const angleExact = shutterSpeedExact * 360 * fps;
+
+  return angleExact;
+}
 /* =========================
    MODE UI
 ========================= */
