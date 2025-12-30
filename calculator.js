@@ -9,6 +9,81 @@
 ========================= */
 const FPS_OPTIONS = [12, 16, 18, 23.976, 24, 25, 30, 48, 50, 60];
 const SHUTTER_OPTIONS = [360, 270, 180, 144, 90, 45];
+const LENS_DATA = {
+  "Cooke Panchro Classic FF": [
+    { focal: 18, t: 2.2 },
+    { focal: 25, t: 2.2 },
+    { focal: 32, t: 2.2 },
+    { focal: 50, t: 2.2 },
+    { focal: 75, t: 2.2 }
+  ],
+
+  "IronGlass Zeiss Jena": [
+    { focal: 20, t: 2.9 },
+    { focal: 24, t: 2.9 },
+    { focal: 28, t: 2.9 },
+    { focal: 35, t: 2.5 },
+    { focal: 50, t: 1.9 },
+    { focal: 80, t: 1.9 },
+    { focal: 120, t: 2.9 }
+  ],
+
+  "IronGlass Sovjet MKII": [
+    { focal: 20, t: 3.6 },
+    { focal: 28, t: 3.6 },
+    { focal: 37, t: 2.9 },
+    { focal: 58, t: 2.1 },
+    { focal: 85, t: 1.6 },
+    { focal: 135, t: 2.9 }
+  ],
+
+  "IronGlass RED P": [
+    { focal: 37, t: 2.9 },
+    { focal: 58, t: 2.1 },
+    { focal: 85, t: 2.1 }
+  ],
+
+  "IronGlass Sovjet Medium Format": [
+    { focal: 30, t: 3.8 },
+    { focal: 35, t: 2.9 },
+    { focal: 45, t: 3.9 },
+    { focal: 65, t: 3.8 },
+    { focal: 80, t: 2.9 },
+    { focal: 90, t: 3.0 },
+    { focal: 120, t: 2.9 },
+    { focal: 150, t: 3.0 }
+  ],
+
+  "DZO Arles": [
+    { focal: 14, t: 1.9 },
+    { focal: 21, t: 1.4 },
+    { focal: 25, t: 1.4 },
+    { focal: 35, t: 1.4 },
+    { focal: 40, t: 1.4 },
+    { focal: 50, t: 1.4 },
+    { focal: 75, t: 1.4 },
+    { focal: 100, t: 1.4 },
+    { focal: 135, t: 1.8 },
+    { focal: 180, t: 2.4 }
+  ],
+
+  "Blazar Remus": [
+    { focal: 35, t: 1.6 },
+    { focal: 45, t: 2.0 },
+    { focal: 65, t: 2.0 },
+    { focal: 100, t: 2.8 }
+  ],
+
+  "Lomo Standard Speed": [
+    { focal: 18, t: 3.1 },
+    { focal: 22, t: 2.2 },
+    { focal: 28, t: 2.3 },
+    { focal: 35, t: 2.3 },
+    { focal: 50, t: 2.2 },
+    { focal: 75, t: 2.2 },
+    { focal: 100, t: 2.3 }
+  ]
+};
 const CAMERA_DATA = {
   arri: {
     iso: [160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],
