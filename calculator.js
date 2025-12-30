@@ -630,12 +630,13 @@ populateISO(b_iso, camera_b.value);
 populateND(a_nd, camera_a.value);
 populateND(b_nd, camera_b.value);
 
+populateLensSeries(a_lens_series);
+populateLensSeries(b_lens_series);
 populateFPS(a_fps);
 populateFPS(b_fps);
 populateShutter(a_shutter);
 populateShutter(b_shutter);
-populateLensSeries(a_lens_series);
-populateLensSeries(b_lens_series);
+
 
 toggleCustomFPS("a");
 toggleCustomFPS("b");
