@@ -7,7 +7,8 @@
 /* =========================
    CAMERA DATA
 ========================= */
-
+const FPS_OPTIONS = [12, 16, 18, 23.976, 24, 25, 30, 48, 50, 60];
+const SHUTTER_OPTIONS = [360, 270, 180, 144, 90, 45];
 const CAMERA_DATA = {
   arri: {
     iso: [160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],
@@ -221,7 +222,39 @@ function populateND(select, cam) {
   });
   select.value = 0;
 }
+function populateFPS(select) {
+  select.innerHTML = "";
+  FPS_OPTIONS.forEach(v => {
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = v;
+    select.appendChild(o);
+  });
 
+  const custom = document.createElement("option");
+  custom.value = "custom";
+  custom.textContent = "Custom…";
+  select.appendChild(custom);
+
+  select.value = select.dataset.default || FPS_OPTIONS[0];
+}
+
+function populateShutter(select) {
+  select.innerHTML = "";
+  SHUTTER_OPTIONS.forEach(v => {
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = `${v}°`;
+    select.appendChild(o);
+  });
+
+  const custom = document.createElement("option");
+  custom.value = "custom";
+  custom.textContent = "Custom…";
+  select.appendChild(custom);
+
+  select.value = select.dataset.default || SHUTTER_OPTIONS[0];
+}
 /* =========================
    T-STOP UI
 ========================= */
@@ -463,8 +496,15 @@ populateISO(a_iso, camera_a.value);
 populateISO(b_iso, camera_b.value);
 populateND(a_nd, camera_a.value);
 populateND(b_nd, camera_b.value);
+
+populateFPS(a_fps);
+populateFPS(b_fps);
+populateShutter(a_shutter);
+populateShutter(b_shutter);
+
 toggleCustomFPS("a");
 toggleCustomFPS("b");
 toggleCustomShutter("a");
 toggleCustomShutter("b");
+
 updateModeUI();
