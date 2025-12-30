@@ -592,9 +592,7 @@ const angB = getShutter("b");
     return;
   }
 
-  result.innerHTML = "";
-}
-  /* ---- SHUTTER ANGLE ---- */
+ /* ---- SHUTTER ANGLE ---- */
   if (mode === "shutter") {
 
     const neededStops =
@@ -605,7 +603,6 @@ const angB = getShutter("b");
 
     const angleExact = shutterAngleFromStops(fpsB, neededStops);
 
-    // snap naar bekende shutter angles
     let best = SHUTTER_OPTIONS[0];
     let bestErr = Infinity;
 
@@ -637,6 +634,9 @@ const angB = getShutter("b");
 
     return;
   }
+
+  result.innerHTML = "";
+}
 /* =========================
    AUTO RECALC
 ========================= */
