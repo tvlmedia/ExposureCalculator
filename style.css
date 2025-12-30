@@ -59,6 +59,16 @@ h1{
   margin-bottom: 6px;
 }
 
+.lens-pair {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin: 10px 0 26px;
+}
+
+.lens-pair > div {
+  text-align: center;
+}
 /* ---------- CALC MODE ---------- */
 
 .calc-select{
