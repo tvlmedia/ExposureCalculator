@@ -321,13 +321,23 @@ function populateFPS(select) {
 
 function populateShutter(select) {
   select.innerHTML = "";
+
   SHUTTER_OPTIONS.forEach(v => {
     const o = document.createElement("option");
     o.value = v;
     o.textContent = `${v}°`;
     select.appendChild(o);
   });
-   function populateLensSeries(select){
+
+  const custom = document.createElement("option");
+  custom.value = "custom";
+  custom.textContent = "Custom…";
+  select.appendChild(custom);
+
+  select.value = select.dataset.default || SHUTTER_OPTIONS[0];
+}
+
+function populateLensSeries(select){
   select.innerHTML = `<option value="">Select lens series…</option>`;
   Object.keys(LENS_DATA).forEach(series=>{
     const o = document.createElement("option");
@@ -364,20 +374,14 @@ function onLensFocalChange(side){
   const opt = focalSelect.selectedOptions[0];
   if (!opt || !opt.dataset.t) return;
 
-  // Set T-stop based on lens data
-  tSelect.value = opt.dataset.t;
+  // Force T-stop to CUSTOM
+  tSelect.value = "custom";
+  toggleCustomT(side);
 
-  // Trigger normal flow (hide custom input if needed + recalc)
-  tSelect.dispatchEvent(new Event("change", { bubbles:true }));
+  const customInput = $(`${side}_t_custom`);
+  customInput.value = opt.dataset.t;
+
   calculate();
-}
-
-  const custom = document.createElement("option");
-  custom.value = "custom";
-  custom.textContent = "Custom…";
-  select.appendChild(custom);
-
-  select.value = select.dataset.default || SHUTTER_OPTIONS[0];
 }
 /* =========================
    T-STOP UI
