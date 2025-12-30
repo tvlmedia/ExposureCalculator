@@ -594,7 +594,49 @@ const angB = getShutter("b");
 
   result.innerHTML = "";
 }
+  /* ---- SHUTTER ANGLE ---- */
+  if (mode === "shutter") {
 
+    const neededStops =
+      EA -
+      isoStops(isoB) -
+      tStops(tB) +
+      ndStops(ndB);
+
+    const angleExact = shutterAngleFromStops(fpsB, neededStops);
+
+    // snap naar bekende shutter angles
+    let best = SHUTTER_OPTIONS[0];
+    let bestErr = Infinity;
+
+    SHUTTER_OPTIONS.forEach(v=>{
+      const err = Math.abs(v - angleExact);
+      if (err < bestErr) {
+        bestErr = err;
+        best = v;
+      }
+    });
+
+    const errStops =
+      shutterStops(fpsB, best) -
+      shutterStops(fpsB, angleExact);
+
+    let secondary = "";
+    if (Math.abs(errStops) > (1/3 + 1e-9)) {
+      secondary =
+        `<div style="margin-top:6px;"><small>` +
+        `Exact shutter would be <strong>${angleExact.toFixed(1)}°</strong>` +
+        ` <small>(≈ ${errStops.toFixed(2)} stop error)</small>` +
+        `</small></div>`;
+    }
+
+    result.innerHTML =
+      `Set B Shutter Angle to <strong>${best}°</strong>` +
+      `<br><small>(exact: ${angleExact.toFixed(1)}°)</small>` +
+      secondary;
+
+    return;
+  }
 /* =========================
    AUTO RECALC
 ========================= */
