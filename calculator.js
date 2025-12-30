@@ -242,26 +242,42 @@ function getT(side){
     : parseFloat(sel.value);
 }
 
+
+function setCalculatedSelect(selectEl) {
+  if (!selectEl) return;
+
+  selectEl.innerHTML = `<option>— calculated —</option>`;
+  selectEl.value = "";
+  selectEl.disabled = true;
+  selectEl.classList.add("calculated");
+}
+
+
 /* =========================
    MODE UI
 ========================= */
 
-function updateModeUI(){
+function updateModeUI() {
   const mode = document.querySelector("input[name='calc']:checked").value;
 
+  // reset alles eerst
   [b_iso, b_nd, b_shutter, b_fps, b_t].forEach(el => {
     if (!el) return;
     el.disabled = false;
     el.classList.remove("calculated");
   });
 
-  if (mode === "iso")    { b_iso.disabled = true; b_iso.classList.add("calculated"); }
-  if (mode === "nd")     { b_nd.disabled  = true; b_nd.classList.add("calculated"); }
-  if (mode === "fps")    { b_fps.disabled = true; b_fps.classList.add("calculated"); }
-  if (mode === "shutter"){ b_shutter.disabled = true; b_shutter.classList.add("calculated"); }
+  // repopulate normale velden
+  populateISO(b_iso, camera_b.value);
+  populateND(b_nd, camera_b.value);
+
+  // apply calculated state
+  if (mode === "iso")     setCalculatedSelect(b_iso);
+  if (mode === "nd")      setCalculatedSelect(b_nd);
+  if (mode === "fps")     setCalculatedSelect(b_fps);
+  if (mode === "shutter") setCalculatedSelect(b_shutter);
   if (mode === "t") {
-    b_t.disabled = true;
-    b_t.classList.add("calculated");
+    setCalculatedSelect(b_t);
     if (b_t_custom) b_t_custom.style.display = "none";
   }
 
