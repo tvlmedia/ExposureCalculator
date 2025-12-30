@@ -121,14 +121,13 @@ function getT(side) {
 function updateModeUI() {
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  // reset B
   [b_iso, b_nd, b_shutter, b_fps, b_t].forEach(el => {
     el.disabled = false;
     el.classList.remove("calculated");
   });
 
   if (mode === "iso") lock(b_iso);
-  if (mode === "nd")  lock(b_nd);
+  if (mode === "nd") lock(b_nd);
   if (mode === "fps") lock(b_fps);
   if (mode === "shutter") lock(b_shutter);
 
@@ -168,7 +167,7 @@ function calculate() {
   const tB   = getT("b");
   const ndB  = +b_nd.value;
 
-  // ---- ND ----
+  /* ---- ND ---- */
   if (mode === "nd") {
     const stops =
       isoStops(isoB) +
@@ -177,8 +176,7 @@ function calculate() {
       EA;
 
     if (stops < 1) {
-      result.innerHTML =
-        "⚠️ ND must be ≥ 1 stop (0.3 ND)";
+      result.innerHTML = "⚠️ ND must be ≥ 1 stop (0.3 ND)";
       return;
     }
 
@@ -197,7 +195,7 @@ function calculate() {
     return;
   }
 
-  // ---- ISO ----
+  /* ---- ISO ---- */
   if (mode === "iso") {
     const iso =
       800 * Math.pow(
@@ -212,7 +210,7 @@ function calculate() {
     return;
   }
 
-  // ---- T-STOP ----
+  /* ---- T-STOP ---- */
   if (mode === "t") {
     const s =
       EA -
@@ -220,8 +218,13 @@ function calculate() {
       shutterStops(fpsB, angB) +
       ndStops(ndB);
 
-    const t = REF_T * Math.pow(2, -s / 2);
-    result.innerHTML = `Set B T-Stop to <strong>T${t.toFixed(2)}</strong>`;
+    const tExact = REF_T * Math.pow(2, -s / 2);
+
+    // ✅ afronden voor cine-praktijk
+    const tDisplay = Math.round(tExact * 10) / 10;
+
+    result.innerHTML =
+      `Set B T-Stop to <strong>T${tDisplay.toFixed(1)}</strong>`;
     return;
   }
 }
