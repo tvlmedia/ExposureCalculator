@@ -232,10 +232,39 @@ function toggleCustomT(side){
   if (!sel || !inp) return;
   inp.style.display = sel.value === "custom" ? "block" : "none";
 }
+function toggleCustomFPS(side){
+  const sel = $( `${side}_fps` );
+  const inp = $( `${side}_fps_custom` );
+  if (!sel || !inp) return;
+  inp.style.display = sel.value === "custom" ? "block" : "none";
+}
 
+function toggleCustomShutter(side){
+  const sel = $( `${side}_shutter` );
+  const inp = $( `${side}_shutter_custom` );
+  if (!sel || !inp) return;
+  inp.style.display = sel.value === "custom" ? "block" : "none";
+}
 function getT(side){
   const sel = $( `${side}_t` );
   const inp = $( `${side}_t_custom` );
+  if (!sel) return NaN;
+  return sel.value === "custom"
+    ? parseFloat(inp.value)
+    : parseFloat(sel.value);
+}
+function getFPS(side){
+  const sel = $( `${side}_fps` );
+  const inp = $( `${side}_fps_custom` );
+  if (!sel) return NaN;
+  return sel.value === "custom"
+    ? parseFloat(inp.value)
+    : parseFloat(sel.value);
+}
+
+function getShutter(side){
+  const sel = $( `${side}_shutter` );
+  const inp = $( `${side}_shutter_custom` );
   if (!sel) return NaN;
   return sel.value === "custom"
     ? parseFloat(inp.value)
@@ -277,15 +306,15 @@ function calculate(){
   const camB = camera_b.value;
 
   const EA = exposure(
-    +a_fps.value,
-    +a_shutter.value,
-    +a_iso.value,
-    getT("a"),
-    +a_nd.value
-  );
+  getFPS("a"),
+  getShutter("a"),
+  +a_iso.value,
+  getT("a"),
+  +a_nd.value
+);
 
-  const fpsB = +b_fps.value;
-  const angB = +b_shutter.value;
+  const fpsB = getFPS("b");
+const angB = getShutter("b");
   const isoB = +b_iso.value;
   const tB   = getT("b");
   const ndB  = +b_nd.value;
@@ -413,6 +442,12 @@ camera_b.onchange = ()=>{
   calculate();
 };
 
+a_fps.onchange = () => { toggleCustomFPS("a"); calculate(); };
+b_fps.onchange = () => { toggleCustomFPS("b"); calculate(); };
+
+a_shutter.onchange = () => { toggleCustomShutter("a"); calculate(); };
+b_shutter.onchange = () => { toggleCustomShutter("b"); calculate(); };
+
 document.querySelectorAll("input[name='calc']")
   .forEach(r => r.onchange = updateModeUI);
 
@@ -420,4 +455,8 @@ populateISO(a_iso, camera_a.value);
 populateISO(b_iso, camera_b.value);
 populateND(a_nd, camera_a.value);
 populateND(b_nd, camera_b.value);
+toggleCustomFPS("a");
+toggleCustomFPS("b");
+toggleCustomShutter("a");
+toggleCustomShutter("b");
 updateModeUI();
