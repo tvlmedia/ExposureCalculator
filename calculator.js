@@ -47,6 +47,13 @@ const REF_T = 2.8;
 const REF_SHUTTER = 1 / 50;
 
 /* =========================
+   HELPERS
+========================= */
+
+// 👉 cine-afronding
+const roundT = t => Math.round(t * 10) / 10;
+
+/* =========================
    PHYSICS
 ========================= */
 
@@ -109,9 +116,12 @@ function toggleCustomT(side) {
 function getT(side) {
   const sel = document.getElementById(`${side}_t`);
   const inp = document.getElementById(`${side}_t_custom`);
-  return sel.value === "custom"
+  const raw = sel.value === "custom"
     ? parseFloat(inp.value)
     : parseFloat(sel.value);
+
+  // 🔑 altijd afronden vóór gebruik
+  return roundT(raw);
 }
 
 /* =========================
@@ -164,7 +174,7 @@ function calculate() {
   const fpsB = +b_fps.value;
   const angB = +b_shutter.value;
   const isoB = +b_iso.value;
-  const tB   = getT("b");
+  const tB   = getT("b"); // 👈 afgerond
   const ndB  = +b_nd.value;
 
   /* ---- ND ---- */
@@ -172,7 +182,7 @@ function calculate() {
     const stops =
       isoStops(isoB) +
       shutterStops(fpsB, angB) +
-      tStops(tB) -
+      tStops(tB) -   // 👈 afgeronde T
       EA;
 
     if (stops < 1) {
@@ -219,12 +229,10 @@ function calculate() {
       ndStops(ndB);
 
     const tExact = REF_T * Math.pow(2, -s / 2);
-
-    // ✅ afronden voor cine-praktijk
-    const tDisplay = Math.round(tExact * 10) / 10;
+    const tRounded = roundT(tExact);
 
     result.innerHTML =
-      `Set B T-Stop to <strong>T${tDisplay.toFixed(1)}</strong>`;
+      `Set B T-Stop to <strong>T${tRounded.toFixed(1)}</strong>`;
     return;
   }
 }
