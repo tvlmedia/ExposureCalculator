@@ -300,11 +300,11 @@ function calculate(){
     +a_nd.value
   );
 
-  const fpsB = +b_fps.value;
-  const angB = +b_shutter.value;
-  const isoB = +b_iso.value;
-  const tB   = getT("b");
-  const ndB  = +b_nd.value;
+  const fpsB = mode === "fps"     ? NaN : +b_fps.value;
+const angB = mode === "shutter"? NaN : +b_shutter.value;
+const isoB = mode === "iso"    ? NaN : +b_iso.value;
+const tB   = mode === "t"      ? NaN : getT("b");
+const ndB  = mode === "nd"     ? NaN : +b_nd.value;
 
   const showSecondaryIfNeeded = (errorStops, currentIso) => {
     if (Math.abs(errorStops) <= (1/3 + 1e-9)) return "";
