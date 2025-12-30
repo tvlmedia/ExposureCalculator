@@ -254,21 +254,29 @@ function getT(side){
     : parseFloat(sel.value);
 }
 function getFPS(side){
-  const sel = $( `${side}_fps` );
-  const inp = $( `${side}_fps_custom` );
+  const sel = $(`${side}_fps`);
+  const inp = $(`${side}_fps_custom`);
   if (!sel) return NaN;
-  return sel.value === "custom"
-    ? parseFloat(inp.value)
-    : parseFloat(sel.value);
+
+  if (sel.value === "custom") {
+    const v = parseFloat(inp.value);
+    return isNaN(v) ? parseFloat(sel.dataset.default || 25) : v;
+  }
+
+  return parseFloat(sel.value);
 }
 
 function getShutter(side){
-  const sel = $( `${side}_shutter` );
-  const inp = $( `${side}_shutter_custom` );
+  const sel = $(`${side}_shutter`);
+  const inp = $(`${side}_shutter_custom`);
   if (!sel) return NaN;
-  return sel.value === "custom"
-    ? parseFloat(inp.value)
-    : parseFloat(sel.value);
+
+  if (sel.value === "custom") {
+    const v = parseFloat(inp.value);
+    return isNaN(v) ? parseFloat(sel.dataset.default || 180) : v;
+  }
+
+  return parseFloat(sel.value);
 }
 
 /* =========================
