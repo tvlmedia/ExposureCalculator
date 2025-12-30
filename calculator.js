@@ -47,11 +47,10 @@ const REF_T = 2.8;
 const REF_SHUTTER = 1 / 50;
 
 /* =========================
-   HELPERS
+   ROUNDING HELPERS
 ========================= */
 
-// 👉 cine-afronding
-const roundT = t => Math.round(t * 10) / 10;
+const round1 = x => Math.round(x * 10) / 10; // 1 decimaal
 
 /* =========================
    PHYSICS
@@ -120,8 +119,8 @@ function getT(side) {
     ? parseFloat(inp.value)
     : parseFloat(sel.value);
 
-  // 🔑 altijd afronden vóór gebruik
-  return roundT(raw);
+  // cine-praktijk: afronden op 1 decimaal als basis
+  return round1(raw);
 }
 
 /* =========================
@@ -174,16 +173,19 @@ function calculate() {
   const fpsB = +b_fps.value;
   const angB = +b_shutter.value;
   const isoB = +b_iso.value;
-  const tB   = getT("b"); // 👈 afgerond
+  const tB   = getT("b");  // 👈 afgerond op 1 decimaal
   const ndB  = +b_nd.value;
 
   /* ---- ND ---- */
   if (mode === "nd") {
-    const stops =
+    const stopsExact =
       isoStops(isoB) +
       shutterStops(fpsB, angB) +
-      tStops(tB) -   // 👈 afgeronde T
+      tStops(tB) -
       EA;
+
+    // ✅ dit is de fix: afronden vóór validatie & keuze
+    const stops = round1(stopsExact);
 
     if (stops < 1) {
       result.innerHTML = "⚠️ ND must be ≥ 1 stop (0.3 ND)";
@@ -229,10 +231,9 @@ function calculate() {
       ndStops(ndB);
 
     const tExact = REF_T * Math.pow(2, -s / 2);
-    const tRounded = roundT(tExact);
+    const tDisplay = round1(tExact);
 
-    result.innerHTML =
-      `Set B T-Stop to <strong>T${tRounded.toFixed(1)}</strong>`;
+    result.innerHTML = `Set B T-Stop to <strong>T${tDisplay.toFixed(1)}</strong>`;
     return;
   }
 }
@@ -241,9 +242,7 @@ function calculate() {
    AUTO RECALC
 ========================= */
 
-document.querySelectorAll(
-  "select, input[type='number']"
-).forEach(el => {
+document.querySelectorAll("select, input[type='number']").forEach(el => {
   el.addEventListener("change", calculate);
   el.addEventListener("input", calculate);
 });
@@ -264,9 +263,9 @@ camera_b.onchange = () => {
   calculate();
 };
 
-document
-  .querySelectorAll("input[name='calc']")
-  .forEach(r => r.onchange = updateModeUI);
+document.querySelectorAll("input[name='calc']").forEach(r => {
+  r.onchange = updateModeUI;
+});
 
 populateISO(a_iso, camera_a.value);
 populateISO(b_iso, camera_b.value);
