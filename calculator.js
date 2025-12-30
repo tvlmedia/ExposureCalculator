@@ -87,7 +87,9 @@ function populateISO(select, cam) {
     o.textContent = v;
     select.appendChild(o);
   });
-  select.value = CAMERA_DATA[cam].iso[0];
+  select.value = CAMERA_DATA[cam].iso.includes(800)
+  ? 800
+  : CAMERA_DATA[cam].iso[0];
 }
 
 function populateND(select, cam) {
