@@ -7,24 +7,29 @@
 const CAMERA_DATA = {
   arri: {
     iso: [160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200],
+    defaultISO: 800,
     ndValues: [0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4]
   },
+
   venice: {
     iso: [
       125,160,200,250,320,400,500,
       640,800,1000,1250,1600,2000,
       2500,3200,4000,5000,6400,8000,10000
     ],
+    defaultISO: 500,
     ndValues: [0,0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4]
   },
+
   eterna: {
     iso: [
       125,160,200,250,320,400,500,
       640,800,1000,1250,1600,2000,
       2500,3200,4000,5000,6400,8000,10000
     ],
+    defaultISO: 800,
     ndValues: (() => {
-      const v = [0, 0.3];
+      const v = [0,0.3];
       for (let n = 0.6; n <= 2.1 + 0.0001; n += 0.05) {
         v.push(Number(n.toFixed(2)));
       }
@@ -42,7 +47,7 @@ const REF_T = 2.8;
 const REF_SHUTTER = 1 / 50;
 
 /* =========================
-   PHYSICS
+   PHYSICS (CORRECT)
 ========================= */
 
 function isoStops(iso) {
@@ -61,7 +66,7 @@ function tStops(t) {
   return -2 * Math.log2(t / REF_T);
 }
 
-// Optical density → stops
+// ND optical density → stops (0.3 ND = 1 stop)
 function ndStops(nd) {
   return nd / 0.3;
 }
@@ -87,9 +92,7 @@ function populateISO(select, cam) {
     o.textContent = v;
     select.appendChild(o);
   });
-  select.value = CAMERA_DATA[cam].iso.includes(800)
-  ? 800
-  : CAMERA_DATA[cam].iso[0];
+  select.value = CAMERA_DATA[cam].defaultISO;
 }
 
 function populateND(select, cam) {
@@ -104,7 +107,7 @@ function populateND(select, cam) {
 }
 
 /* =========================
-   T-STOP
+   T-STOP HANDLING
 ========================= */
 
 function toggleCustomT(side) {
@@ -125,35 +128,35 @@ function getT(side) {
    MODE UI
 ========================= */
 
-function setCalculated(select) {
-  if (!select.dataset.original) {
-    select.dataset.original = select.innerHTML;
-  }
-  select.innerHTML = `<option>— calculated —</option>`;
-  select.disabled = true;
-}
-
-function restoreSelect(select) {
-  if (select.dataset.original) {
-    select.innerHTML = select.dataset.original;
-    delete select.dataset.original;
-  }
-  select.disabled = false;
-}
-
 function updateModeUI() {
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  [b_iso, b_nd, b_shutter, b_fps, b_t].forEach(restoreSelect);
-  b_t_custom.style.display = "none";
+  // reset B side
+  [b_iso, b_nd, b_shutter, b_fps, b_t].forEach(el => {
+    el.disabled = false;
+    el.classList.remove("calculated");
+  });
 
-  if (mode === "iso") setCalculated(b_iso);
-  if (mode === "nd") setCalculated(b_nd);
-  if (mode === "shutter") setCalculated(b_shutter);
-  if (mode === "fps") setCalculated(b_fps);
-  if (mode === "t") setCalculated(b_t);
+  // calculated fields
+  if (mode === "iso") lockCalculated(b_iso);
+  if (mode === "nd") lockCalculated(b_nd);
+  if (mode === "shutter") lockCalculated(b_shutter);
+  if (mode === "fps") lockCalculated(b_fps);
 
-  result.innerHTML = "Result will appear here…";
+  if (mode === "t") {
+    b_t.disabled = true;
+    b_t.classList.add("calculated");
+    b_t.innerHTML = `<option>— calculated —</option>`;
+    b_t_custom.style.display = "none";
+  }
+
+  calculate();
+}
+
+function lockCalculated(el) {
+  el.disabled = true;
+  el.classList.add("calculated");
+  el.innerHTML = `<option>— calculated —</option>`;
 }
 
 /* =========================
@@ -178,9 +181,8 @@ function calculate() {
   const tB   = getT("b");
   const ndB  = +b_nd.value;
 
-  /* ---- ND ---- */
+  // ---- ND ----
   if (mode === "nd") {
-
     const neededStops =
       isoStops(isoB) +
       shutterStops(fpsB, angB) +
@@ -197,20 +199,19 @@ function calculate() {
     const neededND = neededStops * 0.3;
     const options = CAMERA_DATA[camB].ndValues;
 
-    let chosen = options[options.length - 1];
+    let best = options[options.length - 1];
     for (let v of options) {
       if (v >= neededND) {
-        chosen = v;
+        best = v;
         break;
       }
     }
 
-    result.innerHTML =
-      `Set B ND to <strong>${chosen.toFixed(2)}</strong>`;
+    result.innerHTML = `Set B ND to <strong>${best.toFixed(2)}</strong>`;
     return;
   }
 
-  /* ---- ISO ---- */
+  // ---- ISO ----
   if (mode === "iso") {
     const iso =
       800 * Math.pow(
@@ -221,12 +222,11 @@ function calculate() {
         ndStops(ndB)
       );
 
-    result.innerHTML =
-      `Set B ISO to <strong>${Math.round(iso)}</strong>`;
+    result.innerHTML = `Set B ISO to <strong>${Math.round(iso)}</strong>`;
     return;
   }
 
-  /* ---- T-STOP ---- */
+  // ---- T-STOP ----
   if (mode === "t") {
     const s =
       EA -
@@ -237,11 +237,21 @@ function calculate() {
     const t =
       REF_T * Math.pow(2, -s / 2);
 
-    result.innerHTML =
-      `Set B T-Stop to <strong>T${t.toFixed(2)}</strong>`;
+    result.innerHTML = `Set B T-Stop to <strong>T${t.toFixed(2)}</strong>`;
     return;
   }
 }
+
+/* =========================
+   AUTO RECALC
+========================= */
+
+document.querySelectorAll(
+  "select, input[type='number']"
+).forEach(el => {
+  el.addEventListener("change", calculate);
+  el.addEventListener("input", calculate);
+});
 
 /* =========================
    INIT
@@ -250,11 +260,13 @@ function calculate() {
 camera_a.onchange = () => {
   populateISO(a_iso, camera_a.value);
   populateND(a_nd, camera_a.value);
+  calculate();
 };
 
 camera_b.onchange = () => {
   populateISO(b_iso, camera_b.value);
   populateND(b_nd, camera_b.value);
+  calculate();
 };
 
 document
