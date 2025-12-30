@@ -30,7 +30,7 @@ const CAMERA_DATA = {
     defaultISO: 800,
     nd: (() => {
       const v = [0,0.3];
-      for (let n = 0.6; n <= 2.1 + 0.0001; n += 0.05) {
+      for (let n=0.6; n<=2.1+0.0001; n+=0.05) {
         v.push(Number(n.toFixed(2)));
       }
       v.push(2.4);
@@ -47,27 +47,14 @@ const REF_T = 2.8;
 const REF_SHUTTER = 1 / 50;
 
 /* =========================
-   ROUNDING HELPERS
-========================= */
-
-const round1 = x => Math.round(x * 10) / 10; // 1 decimaal
-
-/* =========================
-   PHYSICS
+   PHYSICS (EXACT)
 ========================= */
 
 const isoStops = iso => Math.log2(iso / 800);
-
-const shutterSpeed = (fps, angle) =>
-  (angle / 360) * (1 / fps);
-
+const shutterSpeed = (fps, angle) => (angle / 360) * (1 / fps);
 const shutterStops = (fps, angle) =>
   Math.log2(shutterSpeed(fps, angle) / REF_SHUTTER);
-
-const tStops = t =>
-  -2 * Math.log2(t / REF_T);
-
-// 0.3 ND = 1 stop
+const tStops = t => -2 * Math.log2(t / REF_T);
 const ndStops = nd => nd / 0.3;
 
 const exposure = (fps, angle, iso, t, nd) =>
@@ -75,6 +62,62 @@ const exposure = (fps, angle, iso, t, nd) =>
   shutterStops(fps, angle) +
   tStops(t) -
   ndStops(nd);
+
+/* =========================
+   HELPERS – CINE SNAPPING
+========================= */
+
+// snap to nearest 1/3 stop
+function snapStops(stops) {
+  return Math.round(stops * 3) / 3;
+}
+
+// stops → T-stop
+function stopsToT(stops) {
+  return REF_T * Math.pow(2, -stops / 2);
+}
+
+// snap T to cine thirds
+function snapT(tExact) {
+  const stops = tStops(tExact);
+  const snappedStops = snapStops(stops);
+  return {
+    snapped: stopsToT(snappedStops),
+    exact: tExact
+  };
+}
+
+// snap ISO to valid camera values
+function snapISO(isoExact, cam) {
+  const list = CAMERA_DATA[cam].iso;
+  let best = list[0];
+  let diff = Infinity;
+
+  list.forEach(v => {
+    const d = Math.abs(v - isoExact);
+    if (d < diff) {
+      diff = d;
+      best = v;
+    }
+  });
+
+  return { snapped: best, exact: isoExact };
+}
+
+// snap ND to valid camera ND
+function snapND(ndExact, cam) {
+  const list = CAMERA_DATA[cam].nd;
+  let best = list[list.length - 1];
+
+  for (let v of list) {
+    if (v >= ndExact) {
+      best = v;
+      break;
+    }
+  }
+
+  return { snapped: best, exact: ndExact };
+}
 
 /* =========================
    POPULATORS
@@ -103,62 +146,52 @@ function populateND(select, cam) {
 }
 
 /* =========================
-   T-STOP
+   T-STOP UI
 ========================= */
 
-function toggleCustomT(side) {
+function toggleCustomT(side){
   const sel = document.getElementById(`${side}_t`);
   const inp = document.getElementById(`${side}_t_custom`);
   inp.style.display = sel.value === "custom" ? "block" : "none";
 }
 
-function getT(side) {
+function getT(side){
   const sel = document.getElementById(`${side}_t`);
   const inp = document.getElementById(`${side}_t_custom`);
-  const raw = sel.value === "custom"
+  return sel.value === "custom"
     ? parseFloat(inp.value)
     : parseFloat(sel.value);
-
-  // cine-praktijk: afronden op 1 decimaal als basis
-  return round1(raw);
 }
 
 /* =========================
    MODE UI
 ========================= */
 
-function updateModeUI() {
+function updateModeUI(){
   const mode = document.querySelector("input[name='calc']:checked").value;
 
-  [b_iso, b_nd, b_shutter, b_fps, b_t].forEach(el => {
+  [b_iso, b_nd, b_shutter, b_fps, b_t].forEach(el=>{
     el.disabled = false;
     el.classList.remove("calculated");
   });
 
-  if (mode === "iso") lock(b_iso);
-  if (mode === "nd") lock(b_nd);
-  if (mode === "fps") lock(b_fps);
-  if (mode === "shutter") lock(b_shutter);
-
+  if (mode === "iso") b_iso.disabled = true;
+  if (mode === "nd")  b_nd.disabled = true;
+  if (mode === "fps") b_fps.disabled = true;
+  if (mode === "shutter") b_shutter.disabled = true;
   if (mode === "t") {
     b_t.disabled = true;
-    b_t.classList.add("calculated");
     b_t_custom.style.display = "none";
   }
 
   calculate();
 }
 
-function lock(el) {
-  el.disabled = true;
-  el.classList.add("calculated");
-}
-
 /* =========================
    CALCULATION
 ========================= */
 
-function calculate() {
+function calculate(){
   const mode = document.querySelector("input[name='calc']:checked").value;
   const camB = camera_b.value;
 
@@ -173,54 +206,8 @@ function calculate() {
   const fpsB = +b_fps.value;
   const angB = +b_shutter.value;
   const isoB = +b_iso.value;
-  const tB   = getT("b");  // 👈 afgerond op 1 decimaal
+  const tB   = getT("b");
   const ndB  = +b_nd.value;
-
-  /* ---- ND ---- */
-  if (mode === "nd") {
-    const stopsExact =
-      isoStops(isoB) +
-      shutterStops(fpsB, angB) +
-      tStops(tB) -
-      EA;
-
-    // ✅ dit is de fix: afronden vóór validatie & keuze
-    const stops = round1(stopsExact);
-
-    if (stops < 1) {
-      result.innerHTML = "⚠️ ND must be ≥ 1 stop (0.3 ND)";
-      return;
-    }
-
-    const neededND = stops * 0.3;
-    const options = CAMERA_DATA[camB].nd;
-
-    let best = options[options.length - 1];
-    for (let v of options) {
-      if (v >= neededND) {
-        best = v;
-        break;
-      }
-    }
-
-    result.innerHTML = `Set B ND to <strong>${best.toFixed(2)}</strong>`;
-    return;
-  }
-
-  /* ---- ISO ---- */
-  if (mode === "iso") {
-    const iso =
-      800 * Math.pow(
-        2,
-        EA -
-        shutterStops(fpsB, angB) -
-        tStops(tB) +
-        ndStops(ndB)
-      );
-
-    result.innerHTML = `Set B ISO to <strong>${Math.round(iso)}</strong>`;
-    return;
-  }
 
   /* ---- T-STOP ---- */
   if (mode === "t") {
@@ -231,9 +218,53 @@ function calculate() {
       ndStops(ndB);
 
     const tExact = REF_T * Math.pow(2, -s / 2);
-    const tDisplay = round1(tExact);
+    const t = snapT(tExact);
 
-    result.innerHTML = `Set B T-Stop to <strong>T${tDisplay.toFixed(1)}</strong>`;
+    result.innerHTML =
+      `Set B T-Stop to <strong>T${t.snapped.toFixed(1)}</strong>
+       <br><small>(exact: T${t.exact.toFixed(2)})</small>`;
+    return;
+  }
+
+  /* ---- ISO ---- */
+  if (mode === "iso") {
+    const isoExact =
+      800 * Math.pow(
+        2,
+        EA -
+        shutterStops(fpsB, angB) -
+        tStops(tB) +
+        ndStops(ndB)
+      );
+
+    const iso = snapISO(isoExact, camB);
+
+    result.innerHTML =
+      `Set B ISO to <strong>${iso.snapped}</strong>
+       <br><small>(exact: ${iso.exact.toFixed(0)})</small>`;
+    return;
+  }
+
+  /* ---- ND ---- */
+  if (mode === "nd") {
+    const stops =
+      isoStops(isoB) +
+      shutterStops(fpsB, angB) +
+      tStops(tB) -
+      EA;
+
+    const snappedStops = snapStops(stops);
+    if (snappedStops < 1) {
+      result.innerHTML = "⚠️ ND must be ≥ 1 stop (0.3 ND)";
+      return;
+    }
+
+    const ndExact = snappedStops * 0.3;
+    const nd = snapND(ndExact, camB);
+
+    result.innerHTML =
+      `Set B ND to <strong>${nd.snapped.toFixed(2)}</strong>
+       <br><small>(exact: ${nd.exact.toFixed(2)} ND / ${snappedStops.toFixed(2)} stops)</small>`;
     return;
   }
 }
@@ -242,7 +273,7 @@ function calculate() {
    AUTO RECALC
 ========================= */
 
-document.querySelectorAll("select, input[type='number']").forEach(el => {
+document.querySelectorAll("select, input[type='number']").forEach(el=>{
   el.addEventListener("change", calculate);
   el.addEventListener("input", calculate);
 });
@@ -251,21 +282,20 @@ document.querySelectorAll("select, input[type='number']").forEach(el => {
    INIT
 ========================= */
 
-camera_a.onchange = () => {
+camera_a.onchange = ()=>{
   populateISO(a_iso, camera_a.value);
   populateND(a_nd, camera_a.value);
   calculate();
 };
 
-camera_b.onchange = () => {
+camera_b.onchange = ()=>{
   populateISO(b_iso, camera_b.value);
   populateND(b_nd, camera_b.value);
   calculate();
 };
 
-document.querySelectorAll("input[name='calc']").forEach(r => {
-  r.onchange = updateModeUI;
-});
+document.querySelectorAll("input[name='calc']")
+  .forEach(r=>r.onchange=updateModeUI);
 
 populateISO(a_iso, camera_a.value);
 populateISO(b_iso, camera_b.value);
