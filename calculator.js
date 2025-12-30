@@ -253,6 +253,11 @@ const $ = (id) => document.getElementById(id);
 const camera_a = window.camera_a || $("camera_a");
 const camera_b = window.camera_b || $("camera_b");
 
+const a_lens_series = $("a_lens_series");
+const a_lens_focal  = $("a_lens_focal");
+const b_lens_series = $("b_lens_series");
+const b_lens_focal  = $("b_lens_focal");
+
 const a_fps      = window.a_fps      || $("a_fps");
 const a_shutter  = window.a_shutter  || $("a_shutter");
 const a_iso      = window.a_iso      || $("a_iso");
@@ -322,6 +327,50 @@ function populateShutter(select) {
     o.textContent = `${v}°`;
     select.appendChild(o);
   });
+   function populateLensSeries(select){
+  select.innerHTML = `<option value="">Select lens series…</option>`;
+  Object.keys(LENS_DATA).forEach(series=>{
+    const o = document.createElement("option");
+    o.value = series;
+    o.textContent = series;
+    select.appendChild(o);
+  });
+}
+
+function onLensSeriesChange(side){
+  const seriesSelect = $(`${side}_lens_series`);
+  const focalSelect  = $(`${side}_lens_focal`);
+
+  const series = seriesSelect.value;
+
+  focalSelect.innerHTML = `<option value="">Select focal length…</option>`;
+  focalSelect.disabled = !series;
+
+  if (!series) return;
+
+  LENS_DATA[series].forEach(l=>{
+    const o = document.createElement("option");
+    o.value = String(l.focal);
+    o.textContent = `${l.focal}mm (T${l.t})`;
+    o.dataset.t = String(l.t);
+    focalSelect.appendChild(o);
+  });
+}
+
+function onLensFocalChange(side){
+  const focalSelect = $(`${side}_lens_focal`);
+  const tSelect     = $(`${side}_t`);
+
+  const opt = focalSelect.selectedOptions[0];
+  if (!opt || !opt.dataset.t) return;
+
+  // Set T-stop based on lens data
+  tSelect.value = opt.dataset.t;
+
+  // Trigger normal flow (hide custom input if needed + recalc)
+  tSelect.dispatchEvent(new Event("change", { bubbles:true }));
+  calculate();
+}
 
   const custom = document.createElement("option");
   custom.value = "custom";
@@ -558,6 +607,11 @@ camera_b.onchange = ()=>{
   calculate();
 };
 
+a_lens_series.onchange = () => onLensSeriesChange("a");
+b_lens_series.onchange = () => onLensSeriesChange("b");
+
+a_lens_focal.onchange  = () => onLensFocalChange("a");
+b_lens_focal.onchange  = () => onLensFocalChange("b");
 a_fps.onchange = () => { toggleCustomFPS("a"); calculate(); };
 b_fps.onchange = () => { toggleCustomFPS("b"); calculate(); };
 
@@ -576,6 +630,8 @@ populateFPS(a_fps);
 populateFPS(b_fps);
 populateShutter(a_shutter);
 populateShutter(b_shutter);
+populateLensSeries(a_lens_series);
+populateLensSeries(b_lens_series);
 
 toggleCustomFPS("a");
 toggleCustomFPS("b");
