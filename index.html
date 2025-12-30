@@ -42,45 +42,29 @@
 
 <div class="grid">
 
-  <!-- A -->
+  <!-- CAMERA A -->
   <div class="card">
     <h3>A</h3>
 
     <label>Frame Rate</label>
-<select id="a_fps">
-  <option value="24">24</option>
-  <option value="25" selected>25</option>
-  <option value="30">30</option>
-  <option value="50">50</option>
-  <option value="60">60</option>
-  <option value="custom">Custom…</option>
-</select>
+    <select id="a_fps" data-default="25"></select>
+    <input
+      id="a_fps_custom"
+      type="number"
+      step="1"
+      placeholder="e.g. 12"
+      style="display:none"
+    />
 
-<input
-  id="a_fps_custom"
-  type="number"
-  step="1"
-  placeholder="e.g. 12"
-  style="display:none"
-/>
-   <label>Shutter Angle</label>
-<select id="a_shutter">
-  <option value="360">360°</option>
-  <option value="270">270°</option>
-  <option value="180" selected>180°</option>
-  <option value="144">144°</option>
-  <option value="90">90°</option>
-  <option value="45">45°</option>
-  <option value="custom">Custom…</option>
-</select>
-
-<input
-  id="a_shutter_custom"
-  type="number"
-  step="1"
-  placeholder="e.g. 200"
-  style="display:none"
-/>
+    <label>Shutter Angle</label>
+    <select id="a_shutter" data-default="180"></select>
+    <input
+      id="a_shutter_custom"
+      type="number"
+      step="1"
+      placeholder="e.g. 200"
+      style="display:none"
+    />
 
     <label>ISO</label>
     <select id="a_iso"></select>
@@ -90,7 +74,7 @@
       <option value="1.0">T1.0</option>
       <option value="1.4">T1.4</option>
       <option value="2.0">T2.0</option>
-      <option value="2.8" selected>T2.8</option>
+      <option value="2.8">T2.8</option>
       <option value="4.0">T4.0</option>
       <option value="5.6">T5.6</option>
       <option value="8.0">T8.0</option>
@@ -99,7 +83,6 @@
       <option value="22">T22</option>
       <option value="custom">Custom…</option>
     </select>
-
     <input
       id="a_t_custom"
       type="number"
@@ -109,29 +92,15 @@
     />
 
     <label>ND</label>
-    <select id="a_nd">
-      <option value="0">Clear</option>
-      <option value="1">0.3</option>
-      <option value="2">0.6</option>
-      <option value="3">0.9</option>
-      <option value="4">1.2</option>
-      <option value="5">1.5</option>
-    </select>
+    <select id="a_nd"></select>
   </div>
 
-  <!-- B -->
+  <!-- CAMERA B -->
   <div class="card">
     <h3>B</h3>
 
     <label>Frame Rate</label>
-    <select id="b_fps">
-      <option value="24">24</option>
-      <option value="25" selected>25</option>
-      <option value="30">30</option>
-      <option value="50">50</option>
-      <option value="60">60</option>
-      <option value="custom">Custom…</option>
-    </select>
+    <select id="b_fps" data-default="25"></select>
     <input
       id="b_fps_custom"
       type="number"
@@ -141,13 +110,7 @@
     />
 
     <label>Shutter Angle</label>
-    <select id="b_shutter">
-      <option value="360">360°</option>
-      <option value="180" selected>180°</option>
-      <option value="90">90°</option>
-      <option value="45">45°</option>
-      <option value="custom">Custom…</option>
-    </select>
+    <select id="b_shutter" data-default="180"></select>
     <input
       id="b_shutter_custom"
       type="number"
@@ -164,7 +127,7 @@
       <option value="1.0">T1.0</option>
       <option value="1.4">T1.4</option>
       <option value="2.0">T2.0</option>
-      <option value="2.8" selected>T2.8</option>
+      <option value="2.8">T2.8</option>
       <option value="4.0">T4.0</option>
       <option value="5.6">T5.6</option>
       <option value="8.0">T8.0</option>
@@ -173,7 +136,6 @@
       <option value="22">T22</option>
       <option value="custom">Custom…</option>
     </select>
-
     <input
       id="b_t_custom"
       type="number"
@@ -183,21 +145,14 @@
     />
 
     <label>ND</label>
-    <select id="b_nd">
-      <option value="0">Clear</option>
-      <option value="1">0.3</option>
-      <option value="2">0.6</option>
-      <option value="3">0.9</option>
-      <option value="4">1.2</option>
-      <option value="5">1.5</option>
-    </select>
+    <select id="b_nd"></select>
   </div>
 
 </div>
 
-
-
-<div class="result" id="result">Result will appear here…</div>
+<div class="result" id="result">
+  Result will appear here…
+</div>
 
 <script src="calculator.js"></script>
 </body>
